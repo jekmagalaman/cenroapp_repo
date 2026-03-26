@@ -1,0 +1,21 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | CENRO Admin{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">CENRO Certificate of Inspection</a></h1>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+
+{% endblock %}
+
+{% block nav-global %}
+<div class="admin-dashboard-nav">
+  <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'admin:certificates_certificate_changelist' %}">Certificates</a>
+  <a href="{% url 'admin:index' %}">Admin home</a>
+</div>
+{% endblock %}

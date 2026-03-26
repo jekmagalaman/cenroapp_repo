@@ -1,0 +1,101 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Dashboard | CENRO Admin{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h2 class="mb-4">Admin Dashboard</h2>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-3 bg-success bg-opacity-10 p-3 me-3">
+              <span class="fs-2 text-success">📋</span>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0">Total Certificates</h6>
+              <h3 class="mb-0">{{ total_certificates }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-3 bg-primary bg-opacity-10 p-3 me-3">
+              <span class="fs-2 text-primary">📅</span>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0">This month</h6>
+              <h3 class="mb-0">{{ this_month_count }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-3 bg-info bg-opacity-10 p-3 me-3">
+              <span class="fs-2 text-info">🕐</span>
+            </div>
+            <div>
+              <h6 class="text-muted mb-0">Today</h6>
+              <h3 class="mb-0">{{ today_count }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Recent certificates</h5>
+      <a href="{% url 'admin:certificates_certificate_changelist' %}" class="btn btn-sm btn-outline-primary">View all</a>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Control #</th>
+              <th>Applicant</th>
+              <th>Business</th>
+              <th>Issued date</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cert in recent_certificates %}
+            <tr>
+              <td><strong>{{ cert.control_number }}</strong></td>
+              <td>{{ cert.applicant_name }}</td>
+              <td>{{ cert.business_name }}</td>
+              <td>{{ cert.issued_date }}</td>
+              <td>{{ cert.created_at|date:"M d, Y H:i" }}</td>
+              <td>
+                <a href="{% url 'admin:certificates_certificate_change' cert.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">No certificates yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

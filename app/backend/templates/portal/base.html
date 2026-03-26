@@ -1,0 +1,60 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}CENRO Admin Portal{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <style>
+      :root {
+        --p-primary: #1B5E20;
+        --p-primary-dark: #0D4A17;
+        --p-secondary: #003391;
+      }
+      .portal-nav {
+        background: linear-gradient(135deg, var(--p-primary) 0%, var(--p-primary-dark) 50%, var(--p-secondary) 100%);
+      }
+      .badge-soft-success { background: rgba(25,135,84,.12); color: #198754; }
+      .badge-soft-primary { background: rgba(13,110,253,.12); color: #0d6efd; }
+      .badge-soft-info { background: rgba(13,202,240,.14); color: #0aa2c0; }
+      .card { border-radius: 16px; }
+      .table thead th { white-space: nowrap; }
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-expand-lg portal-nav navbar-dark">
+      <div class="container-fluid px-3 px-md-4">
+        <a class="navbar-brand fw-bold" href="/panel/">CENRO Admin Portal</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="nav">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link {% if request.path == '/panel/' %}active{% endif %}" href="/panel/">Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if '/panel/certificates' in request.path %}active{% endif %}" href="/panel/certificates/">Certificates</a>
+            </li>
+          </ul>
+          <div class="d-flex align-items-center gap-2">
+            <span class="navbar-text small">
+              {{ request.user.first_name }} {{ request.user.last_name }}
+            </span>
+            <a class="btn btn-sm btn-outline-light" href="/panel/logout/">Logout</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container-fluid px-3 px-md-4 py-4">
+      {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
+

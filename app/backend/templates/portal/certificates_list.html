@@ -1,0 +1,73 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Certificates | CENRO Admin Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="mb-0">Certificates</h3>
+    <div class="text-muted small">Showing up to 500 most recent results</div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get">
+      <div class="col-md-6">
+        <label class="form-label">Search</label>
+        <input class="form-control" name="q" value="{{ q }}" placeholder="Control #, applicant, business">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">License type</label>
+        <select class="form-select" name="license_type">
+          <option value="">All</option>
+          {% for lt in license_types %}
+            <option value="{{ lt }}" {% if lt == license_type %}selected{% endif %}>{{ lt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-primary">Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Control #</th>
+            <th>Applicant</th>
+            <th>Business</th>
+            <th>License</th>
+            <th>Issued</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in certificates %}
+          <tr>
+            <td class="fw-semibold">{{ c.control_number }}</td>
+            <td>{{ c.applicant_name }}</td>
+            <td>{{ c.business_name }}</td>
+            <td><span class="badge text-bg-secondary">{{ c.license_type }}</span></td>
+            <td>{{ c.issued_date }}</td>
+            <td class="text-muted small">{{ c.created_at|date:"M d, Y H:i" }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-secondary" href="/panel/certificates/{{ c.pk }}/">View</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No certificates found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

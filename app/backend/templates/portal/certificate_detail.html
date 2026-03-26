@@ -1,0 +1,72 @@
+{% extends "portal/base.html" %}
+
+{% block title %}{{ cert.control_number }} | CENRO Admin Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+  <div>
+    <div class="text-muted small">Certificate</div>
+    <h3 class="mb-0">{{ cert.control_number }}</h3>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="/panel/certificates/">Back</a>
+    <a class="btn btn-outline-primary" href="/admin/certificates/certificate/{{ cert.pk }}/change/">Open in Django Admin</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white py-3 fw-bold">Applicant</div>
+      <div class="card-body">
+        <div class="mb-2"><span class="text-muted small">Name</span><div class="fw-semibold">{{ cert.applicant_name }}</div></div>
+        <div class="mb-2"><span class="text-muted small">Address</span><div class="fw-semibold">{{ cert.applicant_address }}</div></div>
+        <div class="mb-0"><span class="text-muted small">Contact</span><div class="fw-semibold">{{ cert.contact_number }}</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white py-3 fw-bold">Business</div>
+      <div class="card-body">
+        <div class="mb-2"><span class="text-muted small">Name</span><div class="fw-semibold">{{ cert.business_name }}</div></div>
+        <div class="mb-2"><span class="text-muted small">Address</span><div class="fw-semibold">{{ cert.business_address }}</div></div>
+        <div class="mb-0"><span class="text-muted small">Nature</span><div class="fw-semibold">{{ cert.nature_of_business }}</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-0">
+  <div class="col-lg-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white py-3 fw-bold">Inspection</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="text-muted small">License type</div>
+            <div class="fw-semibold">{{ cert.license_type }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted small">Issued date</div>
+            <div class="fw-semibold">{{ cert.issued_date }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted small">Inspector</div>
+            <div class="fw-semibold">{{ cert.inspector_name }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted small">Created by</div>
+            <div class="fw-semibold">{{ cert.created_by|default:"—" }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted small">Created at</div>
+            <div class="fw-semibold">{{ cert.created_at|date:"M d, Y H:i" }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

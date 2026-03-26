@@ -23,8 +23,9 @@ class DbHelper {
 
     return openDatabase(
       path,
-      version: 1,
+      version: 4,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -33,6 +34,7 @@ class DbHelper {
       CREATE TABLE certificates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         controlNumber TEXT NOT NULL,
+        certificateType TEXT NOT NULL,
         applicantName TEXT NOT NULL,
         applicantAddress TEXT NOT NULL,
         licenseType TEXT NOT NULL,
@@ -42,9 +44,29 @@ class DbHelper {
         contactNumber TEXT NOT NULL,
         issuedDate TEXT NOT NULL,
         inspectorName TEXT NOT NULL,
-        createdAt TEXT NOT NULL
+        createdAt TEXT NOT NULL,
+        syncStatus TEXT NOT NULL DEFAULT 'Pending',
+        motorizedData TEXT
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        "ALTER TABLE certificates ADD COLUMN syncStatus TEXT NOT NULL DEFAULT 'Pending'",
+      );
+    }
+    if (oldVersion < 3) {
+      await db.execute(
+        "ALTER TABLE certificates ADD COLUMN motorizedData TEXT",
+      );
+    }
+    if (oldVersion < 4) {
+      await db.execute(
+        "ALTER TABLE certificates ADD COLUMN certificateType TEXT NOT NULL DEFAULT 'marine_certification'",
+      );
+    }
   }
 
   /// Insert a new certificate
@@ -73,6 +95,18 @@ class DbHelper {
     return maps.map((m) => CertificateModel.fromMap(m)).toList();
   }
 
+  /// Get certificates with syncStatus = Pending (for sync to server)
+  Future<List<CertificateModel>> getPendingCertificates() async {
+    final db = await database;
+    final maps = await db.query(
+      'certificates',
+      where: 'syncStatus = ?',
+      whereArgs: [CertificateModel.syncStatusPending],
+      orderBy: 'id ASC',
+    );
+    return maps.map((m) => CertificateModel.fromMap(m)).toList();
+  }
+
   /// Get certificates filtered by date
   Future<List<CertificateModel>> getCertificatesByDate(String date) async {
     final db = await database;
@@ -94,23 +128,32 @@ class DbHelper {
     return CertificateModel.fromMap(maps.first);
   }
 
-  /// Get the highest control number to generate next (BD-XXX)
-  Future<String> getNextControlNumber() async {
-    final db = await database;
-    final result = await db.rawQuery(
-      'SELECT controlNumber FROM certificates ORDER BY id DESC LIMIT 1',
-    );
-    if (result.isEmpty) return 'BD-001';
+  static const Map<String, String> _controlPrefixes = {
+    'builders_form': 'BF',
+    'motorized_certification': 'MC',
+    'marine_certification': 'MR',
+    'exclusive_fish_privilege': 'EFP',
+  };
 
-    final lastControl = result.first['controlNumber'] as String? ?? 'BD-000';
+  /// Get next control number per certificate type (e.g., BF-001, MC-001)
+  Future<String> getNextControlNumber(String certificateType) async {
+    final db = await database;
+    final prefix = _controlPrefixes[certificateType] ?? 'GEN';
+    final result = await db.rawQuery(
+      'SELECT controlNumber FROM certificates WHERE certificateType = ? ORDER BY id DESC LIMIT 1',
+      [certificateType],
+    );
+    if (result.isEmpty) return '$prefix-001';
+
+    final lastControl = result.first['controlNumber'] as String? ?? '$prefix-000';
     final parts = lastControl.split('-');
-    if (parts.length != 2) return 'BD-001';
+    if (parts.length != 2) return '$prefix-001';
 
     try {
-      final num = int.parse(parts[1]);
-      return 'BD-${(num + 1).toString().padLeft(3, '0')}';
+      final num = int.parse(parts.last);
+      return '$prefix-${(num + 1).toString().padLeft(3, '0')}';
     } catch (_) {
-      return 'BD-001';
+      return '$prefix-001';
     }
   }
 

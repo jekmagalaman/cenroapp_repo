@@ -1,11 +1,65 @@
 import 'package:flutter/material.dart';
-import 'form_screen.dart';
 import 'records_screen.dart';
+import 'select_certificate_type_screen.dart';
+import 'login_screen.dart';
+import '../services/auth_service.dart';
+import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
 
 /// Home screen with main navigation
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _syncing = false;
+
+  Future<void> _onSync() async {
+    final token = await AuthService.getToken();
+    if (token == null || token.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Log in first to send certificates to admin.')),
+      );
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+      return;
+    }
+
+    setState(() => _syncing = true);
+    final count = await SyncService.syncPendingToServer();
+    if (!mounted) return;
+    setState(() => _syncing = false);
+
+    if (count == -1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Log in first to sync.')),
+      );
+      return;
+    }
+    if (count == 0) {
+      final hasConn = await SyncService.hasConnection();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            hasConn
+                ? 'No pending certificates to sync.'
+                : 'No internet connection.',
+          ),
+        ),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$count certificate(s) sent to admin.'),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +90,9 @@ class HomeScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const FormScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const SelectCertificateTypeScreen(),
+                    ),
                   );
                 },
               ),
@@ -50,6 +106,19 @@ class HomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const RecordsScreen()),
                   );
                 },
+              ),
+              _MenuCard(
+                icon: Icons.cloud_upload_rounded,
+                title: 'Send to admin',
+                subtitle: 'Sync pending certificates to the admin dashboard',
+                onTap: _syncing ? null : _onSync,
+                trailing: _syncing
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : null,
               ),
               const SizedBox(height: 12),
               Text(
@@ -125,13 +194,15 @@ class _MenuCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final Widget? trailing;
 
   const _MenuCard({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.trailing,
   });
 
   @override
@@ -177,7 +248,7 @@ class _MenuCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+              if (trailing != null) trailing! else Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
             ],
           ),
         ),

@@ -180,6 +180,12 @@ class _RecordsScreenState extends State<RecordsScreen> {
                     _DetailRow('Contact', cert.contactNumber),
                     _DetailRow('Issued', cert.issuedDate),
                     _DetailRow('Inspector', cert.inspectorName),
+                    _DetailRow(
+                      'Sync status',
+                      cert.syncStatus == CertificateModel.syncStatusSynced
+                          ? 'Synced to admin'
+                          : 'Pending upload',
+                    ),
                   ],
                 ),
               ),
@@ -194,7 +200,12 @@ class _RecordsScreenState extends State<RecordsScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                                FormScreen(certificate: cert),
+                                FormScreen(
+                              certificate: cert,
+                              certificateType: cert.certificateType.isNotEmpty
+                                  ? cert.certificateType
+                                  : _inferCertificateTypeFromRecord(cert),
+                            ),
                           ),
                         ).then((_) => _loadCertificates());
                       },
@@ -346,8 +357,23 @@ class _RecordsScreenState extends State<RecordsScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              trailing: Icon(Icons.chevron_right_rounded,
-                                  color: cs.onSurfaceVariant),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    cert.syncStatus == CertificateModel.syncStatusSynced
+                                        ? Icons.cloud_done_rounded
+                                        : Icons.cloud_upload_rounded,
+                                    size: 20,
+                                    color: cert.syncStatus == CertificateModel.syncStatusSynced
+                                        ? Colors.green
+                                        : Colors.orange,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Icon(Icons.chevron_right_rounded,
+                                      color: cs.onSurfaceVariant),
+                                ],
+                              ),
                               onTap: () => _viewDetails(cert),
                             ),
                           );
@@ -390,6 +416,20 @@ class _DetailRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String _inferCertificateTypeFromRecord(CertificateModel cert) {
+  final nature = cert.natureOfBusiness.toLowerCase();
+  if (nature.contains('builder')) {
+    return 'builders_form';
+  }
+  if (nature.contains('motor')) {
+    return 'motorized_certification';
+  }
+  if (nature.contains('exclusive') || nature.contains('fish privilege')) {
+    return 'exclusive_fish_privilege';
+  }
+  return 'marine_certification';
 }
 
 String _initials(String value) {
