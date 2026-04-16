@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/certificate_model.dart';
+import '../models/photo_report_model.dart';
 
 /// SQLite database helper for certificates
 class DbHelper {
@@ -23,7 +24,7 @@ class DbHelper {
 
     return openDatabase(
       path,
-      version: 4,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -49,6 +50,19 @@ class DbHelper {
         motorizedData TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE photo_reports (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        imagePath TEXT NOT NULL,
+        description TEXT NOT NULL,
+        latitude REAL,
+        longitude REAL,
+        accuracyMeters REAL,
+        createdAt TEXT NOT NULL,
+        syncStatus TEXT NOT NULL DEFAULT 'Pending'
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -66,6 +80,22 @@ class DbHelper {
       await db.execute(
         "ALTER TABLE certificates ADD COLUMN certificateType TEXT NOT NULL DEFAULT 'marine_certification'",
       );
+    }
+    if (oldVersion < 5) {
+      await db.execute('''
+        CREATE TABLE photo_reports (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          imagePath TEXT NOT NULL,
+          description TEXT NOT NULL,
+          createdAt TEXT NOT NULL,
+          syncStatus TEXT NOT NULL DEFAULT 'Pending'
+        )
+      ''');
+    }
+    if (oldVersion < 6) {
+      await db.execute("ALTER TABLE photo_reports ADD COLUMN latitude REAL");
+      await db.execute("ALTER TABLE photo_reports ADD COLUMN longitude REAL");
+      await db.execute("ALTER TABLE photo_reports ADD COLUMN accuracyMeters REAL");
     }
   }
 
@@ -128,33 +158,23 @@ class DbHelper {
     return CertificateModel.fromMap(maps.first);
   }
 
-  static const Map<String, String> _controlPrefixes = {
-    'builders_form': 'BF',
-    'motorized_certification': 'MC',
-    'marine_certification': 'MR',
-    'exclusive_fish_privilege': 'EFP',
-  };
-
-  /// Get next control number per certificate type (e.g., BF-001, MC-001)
-  Future<String> getNextControlNumber(String certificateType) async {
+  /// Latest row for this control number and certificate type (for renewal lookup).
+  Future<CertificateModel?> getLatestCertificateByControlNumberAndType(
+    String controlNumber,
+    String certificateType,
+  ) async {
     final db = await database;
-    final prefix = _controlPrefixes[certificateType] ?? 'GEN';
-    final result = await db.rawQuery(
-      'SELECT controlNumber FROM certificates WHERE certificateType = ? ORDER BY id DESC LIMIT 1',
-      [certificateType],
+    final cn = controlNumber.trim();
+    if (cn.isEmpty) return null;
+    final maps = await db.query(
+      'certificates',
+      where: 'controlNumber = ? AND certificateType = ?',
+      whereArgs: [cn, certificateType],
+      orderBy: 'id DESC',
+      limit: 1,
     );
-    if (result.isEmpty) return '$prefix-001';
-
-    final lastControl = result.first['controlNumber'] as String? ?? '$prefix-000';
-    final parts = lastControl.split('-');
-    if (parts.length != 2) return '$prefix-001';
-
-    try {
-      final num = int.parse(parts.last);
-      return '$prefix-${(num + 1).toString().padLeft(3, '0')}';
-    } catch (_) {
-      return '$prefix-001';
-    }
+    if (maps.isEmpty) return null;
+    return CertificateModel.fromMap(maps.first);
   }
 
   /// Update certificate
@@ -172,5 +192,42 @@ class DbHelper {
   Future<int> deleteCertificate(int id) async {
     final db = await database;
     return db.delete('certificates', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> insertPhotoReport(PhotoReportModel report) async {
+    final db = await database;
+    return db.insert('photo_reports', report.toMap());
+  }
+
+  Future<List<PhotoReportModel>> getPendingPhotoReports() async {
+    final db = await database;
+    final maps = await db.query(
+      'photo_reports',
+      where: 'syncStatus = ?',
+      whereArgs: [PhotoReportModel.syncStatusPending],
+      orderBy: 'id ASC',
+    );
+    return maps.map((m) => PhotoReportModel.fromMap(m)).toList();
+  }
+
+  Future<List<PhotoReportModel>> getAllPhotoReports() async {
+    final db = await database;
+    final maps = await db.query('photo_reports', orderBy: 'id DESC');
+    return maps.map((m) => PhotoReportModel.fromMap(m)).toList();
+  }
+
+  Future<int> deletePhotoReport(int id) async {
+    final db = await database;
+    return db.delete('photo_reports', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> updatePhotoReport(PhotoReportModel report) async {
+    final db = await database;
+    return db.update(
+      'photo_reports',
+      report.toMap(),
+      where: 'id = ?',
+      whereArgs: [report.id],
+    );
   }
 }

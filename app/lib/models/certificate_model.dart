@@ -2,8 +2,28 @@ import 'dart:convert';
 
 /// Model for Certificate of Inspection data
 class CertificateModel {
+  /// Uses control number prefix (BF-, MC-, MR-, EFP-) when DB value is missing.
+  static String inferCertificateTypeFromControlNumber(String controlNumber) {
+    final cn = controlNumber.trim().toUpperCase();
+    if (cn.startsWith('BF-')) return 'builders_form';
+    if (cn.startsWith('MC-')) return 'motorized_certification';
+    if (cn.startsWith('MR-')) return 'marine_certification';
+    if (cn.startsWith('EFP-')) return 'exclusive_fish_privilege';
+    return 'marine_certification';
+  }
+
   static const String syncStatusPending = 'Pending';
   static const String syncStatusSynced = 'Synced';
+
+  /// Local-only placeholder until the server assigns the real control number on sync.
+  static const String localControlPrefix = '__LOCAL__';
+
+  static String newLocalControlPlaceholder() =>
+      '$localControlPrefix${DateTime.now().microsecondsSinceEpoch}';
+
+  /// True if this row has not received the official control number yet.
+  bool get usesLocalControlPlaceholder =>
+      controlNumber.startsWith(localControlPrefix);
 
   final int? id;
   final String controlNumber;
@@ -44,8 +64,7 @@ class CertificateModel {
     return CertificateModel(
       id: map['id'] as int?,
       controlNumber: map['controlNumber'] as String,
-      certificateType:
-          (map['certificateType'] as String?) ?? 'marine_certification',
+      certificateType: _parseCertificateType(map),
       applicantName: map['applicantName'] as String,
       applicantAddress: map['applicantAddress'] as String,
       licenseType: map['licenseType'] as String,
@@ -82,10 +101,13 @@ class CertificateModel {
     };
   }
 
-  /// Payload for API (snake_case for Django REST)
+  /// Payload for API (snake_case for Django REST).
+  /// Omits client-invented numbers so the server always allocates for new certificates.
   Map<String, dynamic> toApiJson() {
+    final cn = controlNumber.trim();
+    final sendControl = (cn.isEmpty || cn.startsWith(localControlPrefix)) ? '' : cn;
     return {
-      'control_number': controlNumber,
+      'control_number': sendControl,
       'certificate_type': certificateType,
       'applicant_name': applicantName,
       'applicant_address': applicantAddress,
@@ -133,6 +155,32 @@ class CertificateModel {
       syncStatus: syncStatus ?? this.syncStatus,
       motorizedData: motorizedData ?? this.motorizedData,
     );
+  }
+
+  /// Merge server response after POST (e.g. assigned [control_number]).
+  factory CertificateModel.fromApiResponse(
+    Map<String, dynamic> json,
+    CertificateModel previous,
+  ) {
+    final cn = json['control_number'];
+    final ct = json['certificate_type'];
+    return previous.copyWith(
+      controlNumber: cn is String && cn.trim().isNotEmpty
+          ? cn.trim()
+          : previous.controlNumber,
+      certificateType: ct is String && ct.trim().isNotEmpty
+          ? ct.trim()
+          : previous.certificateType,
+    );
+  }
+
+  static String _parseCertificateType(Map<String, dynamic> map) {
+    final raw = map['certificateType'] as String?;
+    if (raw != null && raw.trim().isNotEmpty) {
+      return raw.trim();
+    }
+    final cn = (map['controlNumber'] as String?) ?? '';
+    return inferCertificateTypeFromControlNumber(cn);
   }
 
   static Map<String, dynamic>? _decodeMotorizedData(String? raw) {

@@ -12,6 +12,17 @@ class RecordsScreen extends StatefulWidget {
   State<RecordsScreen> createState() => _RecordsScreenState();
 }
 
+/// Labels for [CertificateModel.certificateType] (must match app form types).
+const Map<String, String> _certificateTypeLabels = {
+  'builders_form': 'Builders Form',
+  'motorized_certification': 'Motorized Certification',
+  'marine_certification': 'Marine Certification',
+  'exclusive_fish_privilege': 'Exclusive Fish Privilege',
+};
+
+String _labelForCertificateType(String key) =>
+    _certificateTypeLabels[key] ?? key;
+
 class _RecordsScreenState extends State<RecordsScreen> {
   final _db = DbHelper();
   final _searchController = TextEditingController();
@@ -21,6 +32,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
   bool _isLoading = true;
   String _searchQuery = '';
   DateTime? _filterDate;
+  /// `null` = all certificate types.
+  String? _filterCertificateType;
 
   @override
   void initState() {
@@ -37,15 +50,24 @@ class _RecordsScreenState extends State<RecordsScreen> {
   Future<void> _loadCertificates() async {
     setState(() => _isLoading = true);
     final list = await _db.getAllCertificates();
+    if (!mounted) return;
     setState(() {
       _certificates = list;
-      _applyFilters();
       _isLoading = false;
     });
+    _applyFilters();
   }
 
+  /// Applies certificate type, search text, and issued date together (same source list).
   void _applyFilters() {
-    var result = _certificates;
+    var result = List<CertificateModel>.from(_certificates);
+
+    if (_filterCertificateType != null &&
+        _filterCertificateType!.isNotEmpty) {
+      result = result
+          .where((c) => c.certificateType == _filterCertificateType)
+          .toList();
+    }
 
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
@@ -64,41 +86,9 @@ class _RecordsScreenState extends State<RecordsScreen> {
     setState(() => _filteredCertificates = result);
   }
 
-  Future<void> _searchCertificates(String query) async {
-    if (query.isEmpty) {
-      _applyFilters();
-      return;
-    }
-    final list = await _db.searchCertificates(query);
-    setState(() {
-      _filteredCertificates = _filterDate != null
-          ? list.where((c) {
-              final dateStr = DateFormat('MMMM d, yyyy').format(_filterDate!);
-              return c.issuedDate == dateStr;
-            }).toList()
-          : list;
-    });
-  }
-
-  Future<void> _filterByDate(DateTime? date) async {
+  void _filterByDate(DateTime? date) {
     setState(() => _filterDate = date);
-    if (date == null) {
-      _applyFilters();
-      return;
-    }
-    final list = await _db.getCertificatesByDate(
-      DateFormat('MMMM d, yyyy').format(date),
-    );
-    setState(() {
-      _filteredCertificates = _searchQuery.isEmpty
-          ? list
-          : list.where((c) {
-              final q = _searchQuery.toLowerCase();
-              return c.controlNumber.toLowerCase().contains(q) ||
-                  c.applicantName.toLowerCase().contains(q) ||
-                  c.businessName.toLowerCase().contains(q);
-            }).toList();
-    });
+    _applyFilters();
   }
 
   Future<void> _deleteCertificate(CertificateModel cert) async {
@@ -171,9 +161,13 @@ class _RecordsScreenState extends State<RecordsScreen> {
                 child: ListView(
                   controller: scrollController,
                   children: [
+                    _DetailRow(
+                      'Certificate type',
+                      _labelForCertificateType(cert.certificateType),
+                    ),
                     _DetailRow('Applicant', cert.applicantName),
                     _DetailRow('Address', cert.applicantAddress),
-                    _DetailRow('License', cert.licenseType),
+                    _DetailRow('License (New / Renew)', cert.licenseType),
                     _DetailRow('Business', cert.businessName),
                     _DetailRow('Business Address', cert.businessAddress),
                     _DetailRow('Nature', cert.natureOfBusiness),
@@ -258,13 +252,39 @@ class _RecordsScreenState extends State<RecordsScreen> {
               children: [
                 TextField(
                   controller: _searchController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'Search by control #, name, or business...',
-                    prefixIcon: const Icon(Icons.search_rounded),
+                    prefixIcon: Icon(Icons.search_rounded),
                   ),
                   onChanged: (value) {
                     setState(() => _searchQuery = value);
-                    _searchCertificates(value);
+                    _applyFilters();
+                  },
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String?>(
+                  initialValue: _filterCertificateType,
+                  decoration: const InputDecoration(
+                    labelText: 'Certificate type',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  isExpanded: true,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('All types'),
+                    ),
+                    ..._certificateTypeLabels.entries.map(
+                      (e) => DropdownMenuItem<String?>(
+                        value: e.key,
+                        child: Text(e.value),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) {
+                    setState(() => _filterCertificateType = v);
+                    _applyFilters();
                   },
                 ),
                 const SizedBox(height: 12),
@@ -281,10 +301,10 @@ class _RecordsScreenState extends State<RecordsScreen> {
                           );
                           if (date != null) _filterByDate(date);
                         },
-                        icon: const Icon(Icons.filter_list_rounded, size: 18),
+                        icon: const Icon(Icons.calendar_today_rounded, size: 18),
                         label: Text(
                           _filterDate == null
-                              ? 'Filter by date'
+                              ? 'Issued date'
                               : DateFormat('MMM d, yyyy')
                                   .format(_filterDate!),
                         ),
@@ -295,7 +315,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                       IconButton(
                         onPressed: () => _filterByDate(null),
                         icon: const Icon(Icons.clear_rounded),
-                        tooltip: 'Clear filter',
+                        tooltip: 'Clear date',
                       ),
                     ],
                   ],
@@ -352,10 +372,28 @@ class _RecordsScreenState extends State<RecordsScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              subtitle: Text(
-                                '${cert.applicantName} - ${cert.businessName}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _labelForCertificateType(
+                                      cert.certificateType,
+                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: cs.primary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                  Text(
+                                    '${cert.applicantName} · ${cert.businessName}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,

@@ -12,10 +12,14 @@ class FormScreen extends StatefulWidget {
   final CertificateModel? certificate;
   final String certificateType;
 
+  /// When set from the issuance flow, hides New/Renew toggle: `'New'` or `'Renew'`.
+  final String? licenseTypeLock;
+
   const FormScreen({
     super.key,
     this.certificate,
     this.certificateType = 'marine_certification',
+    this.licenseTypeLock,
   });
 
   @override
@@ -35,26 +39,28 @@ class _FormScreenState extends State<FormScreen> {
   late TextEditingController _businessAddressController;
   late TextEditingController _contactNumberController;
   late TextEditingController _inspectorNameController;
-  late TextEditingController _barangayController;
-  late TextEditingController _conformedSignatureController;
+  late TextEditingController _motorizedBarangayController;
   late TextEditingController _fishingDeviceUseController;
-  late TextEditingController _registeredNumberController;
   late TextEditingController _motorBancaNameController;
-  late TextEditingController _lengthController;
-  late TextEditingController _breadthController;
-  late TextEditingController _depthController;
   late TextEditingController _grossTonnageController;
-  late TextEditingController _netTonnageController;
+  late TextEditingController _registeredNumberController;
   late TextEditingController _greenStripeController;
   late TextEditingController _colorCodingController;
   late TextEditingController _dateOfConstructionController;
   late TextEditingController _carpenterNameController;
   late TextEditingController _placeBuiltController;
   late TextEditingController _engineTypeNoController;
+  late TextEditingController _conformedSignatureController;
+  late TextEditingController _lengthController;
+  late TextEditingController _breadthController;
+  late TextEditingController _depthController;
+  late TextEditingController _netTonnageController;
   late TextEditingController _approvalSignatureController;
-  late TextEditingController _releasedByController;
   late TextEditingController _receivedDateTimeController;
   late TextEditingController _releasedDateController;
+  late TextEditingController _barangayController;
+
+  late TextEditingController _releasedByController;
   late TextEditingController _builderNameController;
   late TextEditingController _builderAddressController;
   late TextEditingController _ownerNameController;
@@ -78,14 +84,32 @@ class _FormScreenState extends State<FormScreen> {
   late TextEditingController _numberOfCylindersController;
   late TextEditingController _boreStrokeController;
   late TextEditingController _rpmController;
-  late TextEditingController _numberOfEnginesScrewsController;
+  late TextEditingController _numberOfEnginesOnlyController;
+  late TextEditingController _numberOfPropellersController;
   late TextEditingController _datePlaceIssuedController;
   late TextEditingController _builderSignatureController;
   late TextEditingController _preparedByController;
+  late TextEditingController _builderBarangayBuiltController;
+  late TextEditingController _ownerSitioPurokController;
+  late TextEditingController _ownerBarangayController;
+  late TextEditingController _oathDayController;
+  late TextEditingController _oathMonthController;
+  late TextEditingController _oathYearController;
   late TextEditingController _oathDateController;
+  late TextEditingController _residenceCertBlgController;
+  late TextEditingController _residenceCertIssuedController;
+  late TextEditingController _residenceCertPlaceController;
   late TextEditingController _residenceCertDetailsController;
 
+  // Exclusive Fish Privilege controllers
+  late TextEditingController _areaHasController;
+  late TextEditingController _currentZoningController;
+  late TextEditingController _locationController;
+  late TextEditingController _kindOfLicenseController;
+  late TextEditingController _signaturePrintedNameController;
+
   String _licenseType = 'New';
+
   DateTime _issuedDate = DateTime.now();
   bool _isLoading = true;
   bool _isSaving = false;
@@ -105,9 +129,19 @@ class _FormScreenState extends State<FormScreen> {
     'exclusive_fish_privilege': 'EXCLUSIVE FISH PRIVILEGE APPLICATION',
   };
 
-  bool get _isMotorized =>
-      widget.certificateType == 'motorized_certification';
+  bool get _isMotorized => widget.certificateType == 'motorized_certification';
   bool get _isBuilders => widget.certificateType == 'builders_form';
+
+  /// Exclusive Fish Privilege form
+  bool get _isExclusiveFish =>
+      widget.certificateType == 'exclusive_fish_privilege';
+
+  /// Creating a new row (not editing an existing saved certificate).
+  bool get _isNewCertificate => widget.certificate == null;
+
+  /// Renewals reuse the client's original control number; only New gets auto ID.
+  bool get _controlNumberReadOnly =>
+      _editingId != null || (_isNewCertificate && _licenseType == 'New');
 
   @override
   void initState() {
@@ -123,26 +157,28 @@ class _FormScreenState extends State<FormScreen> {
     _businessAddressController = TextEditingController();
     _contactNumberController = TextEditingController();
     _inspectorNameController = TextEditingController();
-    _barangayController = TextEditingController();
-    _conformedSignatureController = TextEditingController();
+    _motorizedBarangayController = TextEditingController();
     _fishingDeviceUseController = TextEditingController();
-    _registeredNumberController = TextEditingController();
     _motorBancaNameController = TextEditingController();
-    _lengthController = TextEditingController();
-    _breadthController = TextEditingController();
-    _depthController = TextEditingController();
     _grossTonnageController = TextEditingController();
-    _netTonnageController = TextEditingController();
+    _registeredNumberController = TextEditingController();
     _greenStripeController = TextEditingController();
     _colorCodingController = TextEditingController();
     _dateOfConstructionController = TextEditingController();
     _carpenterNameController = TextEditingController();
     _placeBuiltController = TextEditingController();
     _engineTypeNoController = TextEditingController();
+    _conformedSignatureController = TextEditingController();
+    _lengthController = TextEditingController();
+    _breadthController = TextEditingController();
+    _depthController = TextEditingController();
+    _netTonnageController = TextEditingController();
     _approvalSignatureController = TextEditingController();
-    _releasedByController = TextEditingController();
     _receivedDateTimeController = TextEditingController();
     _releasedDateController = TextEditingController();
+    _barangayController = TextEditingController();
+
+    _releasedByController = TextEditingController();
     _builderNameController = TextEditingController();
     _builderAddressController = TextEditingController();
     _ownerNameController = TextEditingController();
@@ -166,26 +202,61 @@ class _FormScreenState extends State<FormScreen> {
     _numberOfCylindersController = TextEditingController();
     _boreStrokeController = TextEditingController();
     _rpmController = TextEditingController();
-    _numberOfEnginesScrewsController = TextEditingController();
+    _numberOfEnginesOnlyController = TextEditingController();
+    _numberOfPropellersController = TextEditingController();
     _datePlaceIssuedController = TextEditingController();
     _builderSignatureController = TextEditingController();
     _preparedByController = TextEditingController();
+    _builderBarangayBuiltController = TextEditingController();
+    _ownerSitioPurokController = TextEditingController();
+    _ownerBarangayController = TextEditingController();
+    _oathDayController = TextEditingController();
+    _oathMonthController = TextEditingController();
+    _oathYearController = TextEditingController();
     _oathDateController = TextEditingController();
+    _residenceCertBlgController = TextEditingController();
+    _residenceCertIssuedController = TextEditingController();
+    _residenceCertPlaceController = TextEditingController();
+    _residenceCertBlgController = TextEditingController();
+    _residenceCertIssuedController = TextEditingController();
+    _residenceCertPlaceController = TextEditingController();
     _residenceCertDetailsController = TextEditingController();
+
+    // Exclusive Fish Privilege
+    _areaHasController = TextEditingController();
+    _currentZoningController = TextEditingController();
+    _locationController = TextEditingController();
+    _kindOfLicenseController = TextEditingController();
+    _signaturePrintedNameController = TextEditingController();
 
     if (widget.certificate != null) {
       _loadCertificate(widget.certificate!);
     } else {
-      _loadNextControlNumber();
+      if (widget.licenseTypeLock == 'New') {
+        _licenseType = 'New';
+      }
+      // Official control numbers are assigned only by the server on sync.
+      if (_licenseType == 'New') {
+        _controlNumberController.text =
+            CertificateModel.newLocalControlPlaceholder();
+      }
+      setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _loadNextControlNumber() async {
-    final nextNumber = await _db.getNextControlNumber(widget.certificateType);
-    setState(() {
-      _controlNumberController.text = nextNumber;
-      _isLoading = false;
-    });
+  Future<void> _onLicenseTypeSelectionChanged(Set<String> selection) async {
+    if (widget.licenseTypeLock != null) return;
+    final next = selection.first;
+    if (next == _licenseType) return;
+    setState(() => _licenseType = next);
+    if (!_isNewCertificate) return;
+    if (next == 'New') {
+      _controlNumberController.text =
+          CertificateModel.newLocalControlPlaceholder();
+    } else {
+      _controlNumberController.clear();
+    }
+    setState(() {});
   }
 
   void _loadCertificate(CertificateModel cert) {
@@ -200,11 +271,11 @@ class _FormScreenState extends State<FormScreen> {
     _contactNumberController.text = cert.contactNumber;
     _inspectorNameController.text = cert.inspectorName;
     final m = cert.motorizedData ?? const <String, dynamic>{};
-    _barangayController.text = (m['barangay'] ?? '').toString();
+    _motorizedBarangayController.text = (m['barangay'] ?? '').toString();
+
     _conformedSignatureController.text =
         (m['conformedSignature'] ?? '').toString();
-    _fishingDeviceUseController.text =
-        (m['fishingDeviceUse'] ?? '').toString();
+    _fishingDeviceUseController.text = (m['fishingDeviceUse'] ?? '').toString();
     _registeredNumberController.text = (m['registeredNumber'] ?? '').toString();
     _motorBancaNameController.text = (m['motorBancaName'] ?? '').toString();
     _lengthController.text = (m['length'] ?? '').toString();
@@ -251,14 +322,46 @@ class _FormScreenState extends State<FormScreen> {
         (m['numberOfCylinders'] ?? '').toString();
     _boreStrokeController.text = (m['boreStroke'] ?? '').toString();
     _rpmController.text = (m['rpm'] ?? '').toString();
-    _numberOfEnginesScrewsController.text =
-        (m['numberOfEnginesScrews'] ?? '').toString();
+    final neStr = (m['numberOfEngines'] ?? '').toString().trim();
+    final npStr = (m['numberOfPropellers'] ?? '').toString().trim();
+    if (neStr.isNotEmpty || npStr.isNotEmpty) {
+      _numberOfEnginesOnlyController.text = neStr;
+      _numberOfPropellersController.text = npStr;
+    } else {
+      final legacy = (m['numberOfEnginesScrews'] ?? '').toString().trim();
+      if (legacy.contains('/')) {
+        final p = legacy.split('/');
+        _numberOfEnginesOnlyController.text = p.isNotEmpty ? p[0].trim() : '';
+        _numberOfPropellersController.text = p.length > 1 ? p[1].trim() : '';
+      } else {
+        _numberOfPropellersController.text = legacy;
+      }
+    }
     _datePlaceIssuedController.text = (m['datePlaceIssued'] ?? '').toString();
     _builderSignatureController.text = (m['builderSignature'] ?? '').toString();
     _preparedByController.text = (m['preparedBy'] ?? '').toString();
+    _builderBarangayBuiltController.text =
+        (m['builderBarangayBuilt'] ?? '').toString();
+    _ownerSitioPurokController.text = (m['ownerSitioPurok'] ?? '').toString();
+    _ownerBarangayController.text = (m['ownerBarangay'] ?? '').toString();
+    _oathDayController.text = (m['oathDay'] ?? '').toString();
+    _oathMonthController.text = (m['oathMonth'] ?? '').toString();
+    _oathYearController.text = (m['oathYear'] ?? '').toString();
     _oathDateController.text = (m['oathDate'] ?? '').toString();
+    _residenceCertBlgController.text = (m['residenceCertBlg'] ?? '').toString();
+    _residenceCertIssuedController.text =
+        (m['residenceCertIssued'] ?? '').toString();
+    _residenceCertPlaceController.text =
+        (m['residenceCertPlace'] ?? '').toString();
     _residenceCertDetailsController.text =
         (m['residenceCertDetails'] ?? '').toString();
+    // Exclusive Fish Privilege
+    _areaHasController.text = (m['areaHas'] ?? '').toString();
+    _currentZoningController.text = (m['currentZoning'] ?? '').toString();
+    _locationController.text = (m['location'] ?? '').toString();
+    _kindOfLicenseController.text = (m['kindOfLicense'] ?? '').toString();
+    _signaturePrintedNameController.text =
+        (m['signaturePrintedName'] ?? '').toString();
     try {
       _issuedDate = DateTime.parse(cert.issuedDate);
     } catch (_) {
@@ -277,6 +380,7 @@ class _FormScreenState extends State<FormScreen> {
     _businessAddressController.dispose();
     _contactNumberController.dispose();
     _inspectorNameController.dispose();
+    _motorizedBarangayController.dispose();
     _barangayController.dispose();
     _conformedSignatureController.dispose();
     _fishingDeviceUseController.dispose();
@@ -320,76 +424,101 @@ class _FormScreenState extends State<FormScreen> {
     _numberOfCylindersController.dispose();
     _boreStrokeController.dispose();
     _rpmController.dispose();
-    _numberOfEnginesScrewsController.dispose();
+    _numberOfEnginesOnlyController.dispose();
+    _numberOfPropellersController.dispose();
     _datePlaceIssuedController.dispose();
     _builderSignatureController.dispose();
     _preparedByController.dispose();
+    _builderBarangayBuiltController.dispose();
+    _ownerSitioPurokController.dispose();
+    _ownerBarangayController.dispose();
+    _oathDayController.dispose();
+    _oathMonthController.dispose();
+    _oathYearController.dispose();
     _oathDateController.dispose();
+    _residenceCertBlgController.dispose();
+    _residenceCertIssuedController.dispose();
+    _residenceCertPlaceController.dispose();
     _residenceCertDetailsController.dispose();
+    _areaHasController.dispose();
+    _currentZoningController.dispose();
+    _locationController.dispose();
+    _kindOfLicenseController.dispose();
+    _signaturePrintedNameController.dispose();
     super.dispose();
   }
 
   CertificateModel _buildModel() {
-    final motorizedData = _isMotorized
-        ? <String, dynamic>{
-            'barangay': _barangayController.text.trim(),
-            'conformedSignature': _conformedSignatureController.text.trim(),
-            'fishingDeviceUse': _fishingDeviceUseController.text.trim(),
-            'registeredNumber': _registeredNumberController.text.trim(),
-            'motorBancaName': _motorBancaNameController.text.trim(),
-            'length': _lengthController.text.trim(),
-            'breadth': _breadthController.text.trim(),
-            'depth': _depthController.text.trim(),
-            'grossTonnage': _grossTonnageController.text.trim(),
-            'netTonnage': _netTonnageController.text.trim(),
-            'greenStripe': _greenStripeController.text.trim(),
-            'colorCoding': _colorCodingController.text.trim(),
-            'dateOfConstruction': _dateOfConstructionController.text.trim(),
-            'carpenterName': _carpenterNameController.text.trim(),
-            'placeBuilt': _placeBuiltController.text.trim(),
-            'engineTypeNo': _engineTypeNoController.text.trim(),
-            'approvalSignature': _approvalSignatureController.text.trim(),
-            'releasedBy': _releasedByController.text.trim(),
-            'receivedDateTime': _receivedDateTimeController.text.trim(),
-            'releasedDate': _releasedDateController.text.trim(),
-          }
-        : _isBuilders
-            ? <String, dynamic>{
-                'builderName': _builderNameController.text.trim(),
-                'builderAddress': _builderAddressController.text.trim(),
-                'ownerName': _ownerNameController.text.trim(),
-                'ownerAddress': _ownerAddressController.text.trim(),
-                'vesselName': _vesselNameController.text.trim(),
-                'vesselTypeClass': _vesselTypeClassController.text.trim(),
-                'materialsUsed': _materialsUsedController.text.trim(),
-                'lengthOverall': _lengthOverallController.text.trim(),
-                'breadthMolded': _breadthMoldedController.text.trim(),
-                'depthMolded': _depthMoldedController.text.trim(),
-                'numberOfDecks': _numberOfDecksController.text.trim(),
-                'numberOfMasts': _numberOfMastsController.text.trim(),
-                'grossTonnageBuilder':
-                    _grossTonnageBuilderController.text.trim(),
-                'netTonnageBuilder': _netTonnageBuilderController.text.trim(),
-                'dateFinishedLaunched':
-                    _dateFinishedLaunchedController.text.trim(),
-                'lifeVests': _lifeVestsController.text.trim(),
-                'engineType': _engineTypeController.text.trim(),
-                'horsepowerModel': _horsepowerModelController.text.trim(),
-                'serialNumber': _serialNumberController.text.trim(),
-                'dateManufactured': _dateManufacturedController.text.trim(),
-                'numberOfCylinders': _numberOfCylindersController.text.trim(),
-                'boreStroke': _boreStrokeController.text.trim(),
-                'rpm': _rpmController.text.trim(),
-                'numberOfEnginesScrews':
-                    _numberOfEnginesScrewsController.text.trim(),
-                'datePlaceIssued': _datePlaceIssuedController.text.trim(),
-                'builderSignature': _builderSignatureController.text.trim(),
-                'preparedBy': _preparedByController.text.trim(),
-                'oathDate': _oathDateController.text.trim(),
-                'residenceCertDetails':
-                    _residenceCertDetailsController.text.trim(),
-              }
-        : null;
+    Map<String, dynamic>? data;
+    if (_isMotorized) {
+      data = <String, dynamic>{
+        'barangay': _motorizedBarangayController.text.trim(),
+        'conformedSignature': _conformedSignatureController.text.trim(),
+        'fishingDeviceUse': _fishingDeviceUseController.text.trim(),
+        'registeredNumber': _registeredNumberController.text.trim(),
+        'motorBancaName': _motorBancaNameController.text.trim(),
+        'length': _lengthController.text.trim(),
+        'breadth': _breadthController.text.trim(),
+        'depth': _depthController.text.trim(),
+        'grossTonnage': _grossTonnageController.text.trim(),
+        'netTonnage': _netTonnageController.text.trim(),
+        'greenStripe': _greenStripeController.text.trim(),
+        'colorCoding': _colorCodingController.text.trim(),
+        'dateOfConstruction': _dateOfConstructionController.text.trim(),
+        'carpenterName': _carpenterNameController.text.trim(),
+        'placeBuilt': _placeBuiltController.text.trim(),
+        'engineTypeNo': _engineTypeNoController.text.trim(),
+        'approvalSignature': _approvalSignatureController.text.trim(),
+        'releasedBy': _releasedByController.text.trim(),
+        'receivedDateTime': _receivedDateTimeController.text.trim(),
+        'releasedDate': _releasedDateController.text.trim(),
+      };
+    } else if (_isBuilders) {
+      data = <String, dynamic>{
+        'builderName': _builderNameController.text.trim(),
+        'builderAddress': _builderAddressController.text.trim(),
+        'builderBarangayBuilt': _builderBarangayBuiltController.text.trim(),
+        'ownerName': _ownerNameController.text.trim(),
+        'ownerSitioPurok': _ownerSitioPurokController.text.trim(),
+        'ownerBarangay': _ownerBarangayController.text.trim(),
+        'vesselName': _vesselNameController.text.trim(),
+        'vesselTypeClass': _vesselTypeClassController.text.trim(),
+        'materialsUsed': _materialsUsedController.text.trim(),
+        'lengthOverall': _lengthOverallController.text.trim(),
+        'breadthMolded': _breadthMoldedController.text.trim(),
+        'depthMolded': _depthMoldedController.text.trim(),
+        'numberOfDecks': _numberOfDecksController.text.trim(),
+        'numberOfMasts': _numberOfMastsController.text.trim(),
+        'grossTonnageBuilder': _grossTonnageBuilderController.text.trim(),
+        'netTonnageBuilder': _netTonnageBuilderController.text.trim(),
+        'dateFinishedLaunched': _dateFinishedLaunchedController.text.trim(),
+        'lifeVests': _lifeVestsController.text.trim(),
+        'engineType': _engineTypeController.text.trim(),
+        'horsepowerModel': _horsepowerModelController.text.trim(),
+        'serialNumber': _serialNumberController.text.trim(),
+        'dateManufactured': _dateManufacturedController.text.trim(),
+        'numberOfCylinders': _numberOfCylindersController.text.trim(),
+        'boreStroke': _boreStrokeController.text.trim(),
+        'rpm': _rpmController.text.trim(),
+        'numberOfEngines': _numberOfEnginesOnlyController.text.trim(),
+        'numberOfPropellers': _numberOfPropellersController.text.trim(),
+        'datePlaceIssued': _datePlaceIssuedController.text.trim(),
+        'builderSignature': _builderSignatureController.text.trim(),
+        'preparedBy': _preparedByController.text.trim(),
+        'oathDate': _oathDateController.text.trim(),
+        'residenceCertBlg': _residenceCertBlgController.text.trim(),
+        'residenceCertIssued': _residenceCertIssuedController.text.trim(),
+        'residenceCertPlace': _residenceCertPlaceController.text.trim(),
+      };
+    } else if (_isExclusiveFish) {
+      data = <String, dynamic>{
+        'areaHas': _areaHasController.text.trim(),
+        'currentZoning': _currentZoningController.text.trim(),
+        'location': _locationController.text.trim(),
+        'kindOfLicense': _kindOfLicenseController.text.trim(),
+        'signaturePrintedName': _signaturePrintedNameController.text.trim(),
+      };
+    }
 
     return CertificateModel(
       id: _editingId,
@@ -406,9 +535,12 @@ class _FormScreenState extends State<FormScreen> {
       inspectorName: _inspectorNameController.text.trim(),
       createdAt: widget.certificate?.createdAt ??
           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now()),
-      syncStatus:
-          widget.certificate?.syncStatus ?? CertificateModel.syncStatusPending,
-      motorizedData: motorizedData,
+      // Edits (including renewals) must re-sync so admin receives the latest data.
+      syncStatus: _editingId != null
+          ? CertificateModel.syncStatusPending
+          : (widget.certificate?.syncStatus ??
+              CertificateModel.syncStatusPending),
+      motorizedData: data,
     );
   }
 
@@ -416,6 +548,7 @@ class _FormScreenState extends State<FormScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (!_validateMotorizedFields()) return;
     if (!_validateBuildersFields()) return;
+    if (!_validateExclusiveFishFields()) return;
 
     setState(() => _isSaving = true);
 
@@ -425,15 +558,25 @@ class _FormScreenState extends State<FormScreen> {
         await _db.updateCertificate(model);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Certificate updated successfully')),
+            const SnackBar(
+              content: Text(
+                'Certificate updated. Use Sync on Home to send changes to admin.',
+              ),
+            ),
           );
+          Navigator.pop(context);
         }
       } else {
         await _db.insertCertificate(model);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Certificate saved successfully')),
+            const SnackBar(
+              content: Text(
+                'Certificate saved. Use Send to admin to receive the official control number.',
+              ),
+            ),
           );
+          Navigator.pop(context);
         }
       }
     } catch (e) {
@@ -451,6 +594,7 @@ class _FormScreenState extends State<FormScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (!_validateMotorizedFields()) return;
     if (!_validateBuildersFields()) return;
+    if (!_validateExclusiveFishFields()) return;
 
     setState(() => _isSaving = true);
     try {
@@ -600,8 +744,32 @@ class _FormScreenState extends State<FormScreen> {
                           ),
                     ),
                     const SizedBox(height: 12),
-                    _buildTextField('Control Number', _controlNumberController,
-                        readOnly: true),
+                    _buildTextField(
+                      _licenseType == 'Renew' && _isNewCertificate
+                          ? 'Control number (same as first registration)'
+                          : 'Control number',
+                      _controlNumberController,
+                      readOnly: _controlNumberReadOnly,
+                      validator: _controlNumberValidator,
+                    ),
+                    if (_licenseType == 'New' && _isNewCertificate) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'The official number (e.g. MC-042) is created on the server when you tap Send to admin. It stays unique even if many inspectors sync at once.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                    if (_licenseType == 'Renew' && _isNewCertificate) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Enter the control number from the first registration. It must already exist on the server.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     _buildTextField('Applicant Name', _applicantNameController,
                         validator: _requiredValidator),
@@ -610,26 +778,45 @@ class _FormScreenState extends State<FormScreen> {
                         'Applicant Address', _applicantAddressController,
                         validator: _requiredValidator),
                     const SizedBox(height: 12),
-                    Text('License Type', style: _labelStyle(context)),
-                    const SizedBox(height: 8),
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(
-                          value: 'New',
-                          label: Text('New'),
-                          icon: Icon(Icons.fiber_new_rounded),
+                    if (widget.licenseTypeLock == null) ...[
+                      Text('License Type', style: _labelStyle(context)),
+                      const SizedBox(height: 8),
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                            value: 'New',
+                            label: Text('New'),
+                            icon: Icon(Icons.fiber_new_rounded),
+                          ),
+                          ButtonSegment(
+                            value: 'Renew',
+                            label: Text('Renew'),
+                            icon: Icon(Icons.refresh_rounded),
+                          ),
+                        ],
+                        selected: {_licenseType},
+                        onSelectionChanged: _onLicenseTypeSelectionChanged,
+                      ),
+                    ] else ...[
+                      Text('License Type', style: _labelStyle(context)),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Chip(
+                          avatar: Icon(
+                            widget.licenseTypeLock == 'Renew'
+                                ? Icons.refresh_rounded
+                                : Icons.fiber_new_rounded,
+                            size: 18,
+                          ),
+                          label: Text(
+                            widget.licenseTypeLock == 'Renew'
+                                ? 'Renewal'
+                                : 'New registration',
+                          ),
                         ),
-                        ButtonSegment(
-                          value: 'Renew',
-                          label: Text('Renew'),
-                          icon: Icon(Icons.refresh_rounded),
-                        ),
-                      ],
-                      selected: {_licenseType},
-                      onSelectionChanged: (s) {
-                        setState(() => _licenseType = s.first);
-                      },
-                    ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     _buildTextField(
                         'Nature of Business', _natureOfBusinessController,
@@ -681,14 +868,16 @@ class _FormScreenState extends State<FormScreen> {
                     children: [
                       Text(
                         'Motorized Certification Details',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
                       ),
                       const SizedBox(height: 12),
-                      Text('Applicant Information', style: _labelStyle(context)),
+                      Text('Applicant Information',
+                          style: _labelStyle(context)),
                       const SizedBox(height: 8),
-                      _buildTextField('Barangay', _barangayController),
+                      _buildTextField('Barangay', _motorizedBarangayController),
                       const SizedBox(height: 10),
                       _buildTextField(
                         'Conformed Signature (Printed Name)',
@@ -707,7 +896,8 @@ class _FormScreenState extends State<FormScreen> {
                         ),
                         const SizedBox(height: 10),
                       ],
-                      Text('Vessel Specifications', style: _labelStyle(context)),
+                      Text('Vessel Specifications',
+                          style: _labelStyle(context)),
                       const SizedBox(height: 8),
                       _buildTextField(
                         'Name of Motor Banca',
@@ -802,63 +992,115 @@ class _FormScreenState extends State<FormScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Builders Form Details',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        '*SERTIPIKO NG PAGKAGAWA',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
                       ),
                       const SizedBox(height: 12),
-                      Text('Builder & Owner Information', style: _labelStyle(context)),
+                      Text('Pangalan ng gumawa', style: _labelStyle(context)),
                       const SizedBox(height: 8),
-                      _buildTextField("Builder's Name", _builderNameController),
+                      _buildTextField(
+                        'Pangalan ng gumawa',
+                        _builderNameController,
+                        validator: _requiredValidator,
+                      ),
                       const SizedBox(height: 10),
-                      _buildTextField("Builder's Address", _builderAddressController),
+                      _buildTextField(
+                        'Tirahan ng gumawa',
+                        _builderAddressController,
+                        validator: _requiredValidator,
+                      ),
                       const SizedBox(height: 10),
-                      _buildTextField("Owner's Name", _ownerNameController),
+                      _buildTextField(
+                        'Barangay kung saan ginawa o binuo ang bangka',
+                        _builderBarangayBuiltController,
+                        validator: _requiredValidator,
+                      ),
                       const SizedBox(height: 10),
-                      _buildTextField("Owner's Address", _ownerAddressController),
+                      _buildTextField(
+                        'Pangalan ng may-ari',
+                        _ownerNameController,
+                        validator: _requiredValidator,
+                      ),
                       const SizedBox(height: 10),
-                      Text('Vessel Identification', style: _labelStyle(context)),
+                      _buildTextField(
+                        'Sitio / Purok ng may-ari',
+                        _ownerSitioPurokController,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildTextField(
+                        'Barangay ng may-ari sa lungsod ng Puerto Princesa',
+                        _ownerBarangayController,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        '*PAGKAKAKILANLAN NG BANGKANG MAY MOTOR',
+                        style: _labelStyle(context),
+                      ),
                       const SizedBox(height: 8),
-                      _buildTextField('Vessel Name', _vesselNameController),
+                      _buildTextField(
+                        'Pangalan ng bangka',
+                        _vesselNameController,
+                        validator: _requiredValidator,
+                      ),
                       const SizedBox(height: 10),
-                      _buildTextField('Vessel Type/Class', _vesselTypeClassController),
+                      _buildTextField(
+                        'Uri/Klase',
+                        _vesselTypeClassController,
+                        validator: _requiredValidator,
+                      ),
                       const SizedBox(height: 10),
-                      _buildTextField('Materials Used', _materialsUsedController),
+                      _buildTextField(
+                        'Mga materyales na ginamit',
+                        _materialsUsedController,
+                        validator: _requiredValidator,
+                      ),
                       const SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
                             child: _buildTextField(
-                              'Length Overall (m)',
+                              'Kabuuang haba (m)',
                               _lengthOverallController,
+                              validator: _requiredValidator,
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: _buildTextField(
-                              'Breadth-Molded (m)',
+                              'Luwang – Breadth molded (m)',
                               _breadthMoldedController,
+                              validator: _requiredValidator,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      _buildTextField('Depth-Molded (m)', _depthMoldedController),
+                      _buildTextField(
+                        'Sukat ng lalim – Depth molded (m)',
+                        _depthMoldedController,
+                        validator: _requiredValidator,
+                      ),
                       const SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
                             child: _buildTextField(
-                              'Number of Decks',
+                              'Bilang ng deck / kamarote',
                               _numberOfDecksController,
+                              validator: _requiredValidator,
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: _buildTextField(
-                              'Number of Masts',
+                              'Bilang ng mast / palo',
                               _numberOfMastsController,
+                              validator: _requiredValidator,
                             ),
                           ),
                         ],
@@ -868,68 +1110,267 @@ class _FormScreenState extends State<FormScreen> {
                         children: [
                           Expanded(
                             child: _buildTextField(
-                              'Gross Tonnage (G.T.)',
+                              'G.T. (Gross)',
                               _grossTonnageBuilderController,
+                              validator: _requiredValidator,
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: _buildTextField(
-                              'Net Tonnage (N.T.)',
+                              'N.T. (Net)',
                               _netTonnageBuilderController,
+                              validator: _requiredValidator,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
                       _buildTextField(
-                        'Date Finished/Launched',
+                        'Kailan natapos o ipinalaot',
                         _dateFinishedLaunchedController,
+                        validator: _requiredValidator,
                       ),
                       const SizedBox(height: 10),
-                      _buildTextField('Life Vests/Jackets', _lifeVestsController),
-                      const SizedBox(height: 10),
-                      Text('Engine Specifications', style: _labelStyle(context)),
+                      _buildTextField(
+                        'Life vest / jacket (bilang)',
+                        _lifeVestsController,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'Pagkakakilanlan ng makina',
+                        style: _labelStyle(context),
+                      ),
                       const SizedBox(height: 8),
-                      _buildTextField('Engine Type', _engineTypeController),
+                      _buildTextField(
+                        'Uri ng makina',
+                        _engineTypeController,
+                        validator: _requiredValidator,
+                      ),
                       const SizedBox(height: 10),
                       _buildTextField(
-                        'Horsepower & Model',
+                        'Lakas at modelo (HP & model)',
                         _horsepowerModelController,
+                        validator: _requiredValidator,
                       ),
                       const SizedBox(height: 10),
-                      _buildTextField('Serial Number', _serialNumberController),
-                      const SizedBox(height: 10),
-                      _buildTextField('Date Manufactured', _dateManufacturedController),
+                      _buildTextField(
+                        'Serial number',
+                        _serialNumberController,
+                        validator: _requiredValidator,
+                      ),
                       const SizedBox(height: 10),
                       _buildTextField(
-                        'Number of Cylinders',
+                        'Petsang ginawa',
+                        _dateManufacturedController,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildTextField(
+                        'Ilang silindro',
                         _numberOfCylindersController,
+                        validator: _requiredValidator,
                       ),
-                      const SizedBox(height: 10),
-                      _buildTextField('Bore and Stroke', _boreStrokeController),
-                      const SizedBox(height: 10),
-                      _buildTextField('R.P.M.', _rpmController),
                       const SizedBox(height: 10),
                       _buildTextField(
-                        'Number of Engines and Screws/Propellers',
-                        _numberOfEnginesScrewsController,
+                        'Bore at stroke',
+                        _boreStrokeController,
+                        validator: _requiredValidator,
                       ),
                       const SizedBox(height: 10),
-                      Text('Legal & Notary Details', style: _labelStyle(context)),
+                      _buildTextField(
+                        'R.P.M.',
+                        _rpmController,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(
+                              'Ilang makina',
+                              _numberOfEnginesOnlyController,
+                              validator: _requiredValidator,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _buildTextField(
+                              'Ilang propeller / screw',
+                              _numberOfPropellersController,
+                              validator: _requiredValidator,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      _buildTextField(
+                        'Petsa at lugar na inisyu',
+                        _datePlaceIssuedController,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 14),
+                      Text('Lagda at admin', style: _labelStyle(context)),
                       const SizedBox(height: 8),
-                      _buildTextField('Date and Place Issued', _datePlaceIssuedController),
-                      const SizedBox(height: 10),
-                      _buildTextField("Builder's Signature", _builderSignatureController),
-                      const SizedBox(height: 10),
-                      _buildTextField('Prepared By', _preparedByController),
-                      const SizedBox(height: 10),
-                      _buildTextField('Oath Date', _oathDateController),
+                      _buildTextField(
+                        'Pangalan at lagda ng gumawa',
+                        _builderSignatureController,
+                        validator: _requiredValidator,
+                      ),
                       const SizedBox(height: 10),
                       _buildTextField(
-                        'Residence Certificate Details',
+                        'Prepared by',
+                        _preparedByController,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 10),
+                      Text('Sumpa (oath)', style: _labelStyle(context)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(
+                              'Araw (ika-…)',
+                              _oathDayController,
+                              validator: _requiredValidator,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _buildTextField(
+                              'Buwan',
+                              _oathMonthController,
+                              validator: _requiredValidator,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      _buildTextField(
+                        'Taon',
+                        _oathYearController,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildTextField(
+                        'Buong petsa / tala (optional)',
+                        _oathDateController,
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'Katibayan ng paninirahan',
+                        style: _labelStyle(context),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        'BLG. (numero)',
+                        _residenceCertBlgController,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildTextField(
+                        'Na iginawad (petsa / pangalan, gaya ng template)',
+                        _residenceCertIssuedController,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildTextField(
+                        'Lugar',
+                        _residenceCertPlaceController,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildTextField(
+                        'Karagdagang detalye (optional)',
                         _residenceCertDetailsController,
                       ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (_isExclusiveFish) ...[
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('*Impormasyon ng Proyekto at Aplikante',
+                          style: _labelStyle(context)
+                              .copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text('MR. / MS. (Pangalan ng aplikante)',
+                          style: _labelStyle(context)),
+                      _buildTextField('', _applicantNameController,
+                          validator: _requiredValidator),
+                      const SizedBox(height: 10),
+                      Text('Address (Tirahan)', style: _labelStyle(context)),
+                      _buildTextField('', _applicantAddressController,
+                          validator: _requiredValidator),
+                      const SizedBox(height: 10),
+                      Text('Area of HAS. (Sukat ng lugar sa ektarya)',
+                          style: _labelStyle(context)),
+                      _buildTextField('', _areaHasController,
+                          validator: _requiredValidator),
+                      const SizedBox(height: 10),
+                      Text('NEW o RENEW (Uri ng aplikasyon)',
+                          style: _labelStyle(context)),
+                      _buildTextField(
+                          '', TextEditingController(text: _licenseType),
+                          readOnly: true),
+                      const SizedBox(height: 10),
+                      Text('KIND OF LICENSE APPLIED FOR',
+                          style: _labelStyle(context)),
+                      _buildTextField('', _kindOfLicenseController,
+                          validator: _requiredValidator),
+                      const SizedBox(height: 10),
+                      Text('NATURE OF BUSINESS', style: _labelStyle(context)),
+                      _buildTextField('', _natureOfBusinessController,
+                          validator: _requiredValidator),
+                      const SizedBox(height: 10),
+                      Text('CURRENT ZONING', style: _labelStyle(context)),
+                      _buildTextField('', _currentZoningController,
+                          validator: _requiredValidator),
+                      const SizedBox(height: 10),
+                      Text('LOCATION (Lokasyon)', style: _labelStyle(context)),
+                      _buildTextField('', _locationController,
+                          validator: _requiredValidator),
+                      const SizedBox(height: 10),
+                      Text('NAME OF BUSINESS (Pangalan ng Negosyo)',
+                          style: _labelStyle(context)),
+                      _buildTextField('', _businessNameController,
+                          validator: _requiredValidator),
+                      const SizedBox(height: 16),
+                      Text('*Pagpapatunay at Kasunduan',
+                          style: _labelStyle(context)
+                              .copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text(
+                          'Issued this ____ day of ________ 2026 (Petsa ng pag-isyu)',
+                          style: _labelStyle(context)),
+                      _buildTextField(
+                          '',
+                          TextEditingController(
+                              text: DateFormat('MMMM d, yyyy')
+                                  .format(_issuedDate)),
+                          readOnly: true),
+                      const SizedBox(height: 10),
+                      Text(
+                          'Signature over Printed Name (Lagda sa ibabaw ng pangalan ng May-ari/Kinatawan)',
+                          style: _labelStyle(context)),
+                      _buildTextField('', _signaturePrintedNameController,
+                          validator: _requiredValidator),
+                      const SizedBox(height: 10),
+                      Text('Contact No.', style: _labelStyle(context)),
+                      _buildTextField('', _contactNumberController),
+                      const SizedBox(height: 10),
+                      Text('Inspected by', style: _labelStyle(context)),
+                      _buildTextField('', _inspectorNameController),
+                      const SizedBox(height: 10),
+                      Text('Approved by', style: _labelStyle(context)),
                     ],
                   ),
                 ),
@@ -1060,10 +1501,23 @@ class _FormScreenState extends State<FormScreen> {
     return null;
   }
 
+  String? _controlNumberValidator(String? value) {
+    if (_editingId != null) return null;
+    if (_licenseType == 'Renew') {
+      if (value == null || value.trim().isEmpty) {
+        return 'Enter the control number from first registration';
+      }
+      if (value.trim().startsWith(CertificateModel.localControlPrefix)) {
+        return 'Enter the registered control number';
+      }
+    }
+    return null;
+  }
+
   bool _validateMotorizedFields() {
     if (!_isMotorized) return true;
     final requiredMap = <String, String>{
-      'Barangay': _barangayController.text,
+      'Barangay': _motorizedBarangayController.text,
       'Conformed Signature': _conformedSignatureController.text,
       'Fishing Device Use': _fishingDeviceUseController.text,
       'Name of Motor Banca': _motorBancaNameController.text,
@@ -1089,7 +1543,9 @@ class _FormScreenState extends State<FormScreen> {
     for (final entry in requiredMap.entries) {
       if (entry.value.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${entry.key} is required for motorized certification.')),
+          SnackBar(
+              content: Text(
+                  '${entry.key} is required for motorized certification.')),
         );
         return false;
       }
@@ -1100,41 +1556,77 @@ class _FormScreenState extends State<FormScreen> {
   bool _validateBuildersFields() {
     if (!_isBuilders) return true;
     final requiredMap = <String, String>{
-      "Builder's Name": _builderNameController.text,
-      "Builder's Address": _builderAddressController.text,
-      "Owner's Name": _ownerNameController.text,
-      "Owner's Address": _ownerAddressController.text,
-      'Vessel Name': _vesselNameController.text,
-      'Vessel Type/Class': _vesselTypeClassController.text,
-      'Materials Used': _materialsUsedController.text,
-      'Length Overall': _lengthOverallController.text,
-      'Breadth-Molded': _breadthMoldedController.text,
-      'Depth-Molded': _depthMoldedController.text,
-      'Number of Decks': _numberOfDecksController.text,
-      'Number of Masts': _numberOfMastsController.text,
-      'Gross Tonnage': _grossTonnageBuilderController.text,
-      'Net Tonnage': _netTonnageBuilderController.text,
-      'Date Finished/Launched': _dateFinishedLaunchedController.text,
-      'Life Vests/Jackets': _lifeVestsController.text,
-      'Engine Type': _engineTypeController.text,
-      'Horsepower & Model': _horsepowerModelController.text,
-      'Serial Number': _serialNumberController.text,
-      'Date Manufactured': _dateManufacturedController.text,
-      'Number of Cylinders': _numberOfCylindersController.text,
-      'Bore and Stroke': _boreStrokeController.text,
-      'R.P.M.': _rpmController.text,
-      'Number of Engines and Screws/Propellers':
-          _numberOfEnginesScrewsController.text,
-      'Date and Place Issued': _datePlaceIssuedController.text,
-      "Builder's Signature": _builderSignatureController.text,
-      'Prepared By': _preparedByController.text,
-      'Oath Date': _oathDateController.text,
-      'Residence Certificate Details': _residenceCertDetailsController.text,
+      'Pangalan ng gumawa': _builderNameController.text,
+      'Tirahan ng gumawa': _builderAddressController.text,
+      'Barangay kung saan ginawa o binuo ang bangka':
+          _builderBarangayBuiltController.text,
+      'Pangalan ng may-ari': _ownerNameController.text,
+      'Sitio / Purok ng may-ari': _ownerSitioPurokController.text,
+      'Barangay ng may-ari sa lungsod ng Puerto Princesa':
+          _ownerBarangayController.text,
+      'Pangalan ng Bangkang may motor': _vesselNameController.text,
+      'Uri/Klase ng Bangkang may motor': _vesselTypeClassController.text,
+      'Mga Materyales na ginamit': _materialsUsedController.text,
+      'Kabuuang Haba (Length overall)': _lengthOverallController.text,
+      'Sukat ng bawat kabilugang gilid o Luwang (Breath-Molded)':
+          _breadthMoldedController.text,
+      'Sukat ng Lalim (Depth- Molded)': _depthMoldedController.text,
+      'Bilang ng Kamarote (No. of Deck)': _numberOfDecksController.text,
+      'Bilang ng Palo (No. of Mast)': _numberOfMastsController.text,
+      'Kabuuang bigat sa tonelada (Gross Tonnage)':
+          _grossTonnageBuilderController.text,
+      'Netong bigat sa tonelada (Net Tonnage)':
+          _netTonnageBuilderController.text,
+      'Kailan natapos o ipinalaot (Date Finished/ Launched)':
+          _dateFinishedLaunchedController.text,
+      'Bilang ng gamit pangkaligtasan (Life Vest/ Life Jacket)':
+          _lifeVestsController.text,
+      'Uri ng Makina': _engineTypeController.text,
+      'Lakas at Modelo (HP & MODEL)': _horsepowerModelController.text,
+      'Serial Number ng makina': _serialNumberController.text,
+      'Petsang Ginawa ang makina': _dateManufacturedController.text,
+      'Ilang Silindro (Cylinder)': _numberOfCylindersController.text,
+      'Bore at Stroke': _boreStrokeController.text,
+      'R.P.M': _rpmController.text,
+      'Ilang Makina': _numberOfEnginesOnlyController.text,
+      'Ilang Turnilyo (Screw)': _numberOfPropellersController.text,
+      'Petsa at lugar kung kailan inisyu ang dokumento':
+          _datePlaceIssuedController.text,
+      'Pangalan at Lagda ng Gumawa': _builderSignatureController.text,
+      'Pangalan ng naghanda (Prepared By)': _preparedByController.text,
+      'Petsa ng panunumpa sa harap ng opisyal': _oathDateController.text,
+      'Numero ng katibayan ng paninirahan (BLG.)':
+          _residenceCertBlgController.text,
+      'Petsa at lugar kung kailan iginawad ang katibayan ng paninirahan':
+          '${_residenceCertIssuedController.text} ${_residenceCertPlaceController.text}',
     };
     for (final entry in requiredMap.entries) {
       if (entry.value.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${entry.key} is required for builders form.')),
+          SnackBar(
+              content: Text('${entry.key} is required for builders form.')),
+        );
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _validateExclusiveFishFields() {
+    if (!_isExclusiveFish) return true;
+    final requiredMap = <String, String>{
+      'Area of HAS': _areaHasController.text,
+      'KIND OF LICENSE APPLIED FOR': _kindOfLicenseController.text,
+      'CURRENT ZONING': _currentZoningController.text,
+      'LOCATION': _locationController.text,
+      'Signature over Printed Name': _signaturePrintedNameController.text,
+    };
+    for (final entry in requiredMap.entries) {
+      if (entry.value.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  '${entry.key} is required for Exclusive Fish Privilege form.')),
         );
         return false;
       }

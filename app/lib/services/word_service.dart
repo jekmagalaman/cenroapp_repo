@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import '../models/certificate_model.dart';
+import 'builders_form_document.dart';
 import 'file_storage_service.dart';
 
 /// Service for generating Certificate of Inspection Word documents
@@ -11,15 +12,19 @@ class WordService {
   static const String _approvedByTitle =
       'CG Assistant Department Head II (Assistant City ENRO)';
 
-  /// Generate Word (RTF) file and save to device storage
+  /// Generate Word (DOCX minimal OOXML) and save to device storage
   static Future<String> generateWord(CertificateModel certificate) async {
-    final bytes = _buildDocxBytes(certificate);
-    final filename = '${certificate.controlNumber}.docx';
+    final documentXml = certificate.certificateType == 'builders_form'
+        ? _buildBuildersDocumentXml(certificate)
+        : _buildDocumentXml(certificate);
+    final bytes = _buildDocxBytesFromDocumentXml(documentXml);
+    final filename = certificate.certificateType == 'builders_form'
+        ? '${certificate.controlNumber}_Builders_Form.docx'
+        : '${certificate.controlNumber}.docx';
     return FileStorageService.saveWordFile(bytes: bytes, filename: filename);
   }
 
-  static Uint8List _buildDocxBytes(CertificateModel cert) {
-    final documentXml = _buildDocumentXml(cert);
+  static Uint8List _buildDocxBytesFromDocumentXml(String documentXml) {
 
     final contentTypesXml = _buildContentTypesXml();
     final relsXml = _buildRootRelsXml();
@@ -63,6 +68,139 @@ class WordService {
     final zipped = ZipEncoder().encode(archive);
     if (zipped == null) throw Exception('Failed to create DOCX archive');
     return Uint8List.fromList(zipped);
+  }
+
+  static String _buildBuildersDocumentXml(CertificateModel cert) {
+    final b = BuildersFormData(cert);
+    final body = StringBuffer();
+
+    body.writeln(_p('Control / BLG: ${b.controlNumber}', align: 'right', fontSize: 18));
+    body.writeln(_spacer());
+    body.writeln(
+        _p('SERTIPIKO NG PAGKAGAWA:', align: 'center', bold: true, fontSize: 26));
+    body.writeln(_spacer(height: 1));
+    body.writeln(_p(
+      'Ang kasulatang ito ay pagpatunay na ang nabanggit na pangalan at pagkakakilanlan sa bangkang may motor ay ginawa ni',
+      fontSize: 18,
+      align: 'both',
+    ));
+    body.writeln(_p(b.builderName, bold: true, fontSize: 20));
+    body.writeln(_p('(Pangalan ng gumawa)', align: 'center', fontSize: 16));
+    body.writeln(_p('Nakatira sa', fontSize: 18));
+    body.writeln(_p(b.builderAddress, bold: true, fontSize: 18));
+    body.writeln(_p('at ginawa/binuo sa Barangay', fontSize: 18));
+    body.writeln(_p(b.builderBarangayBuilt, bold: true, fontSize: 18));
+    body.writeln(_spacer(height: 1));
+    body.writeln(_p(
+      'Para sa kapakanan ni (may-ari) ${b.ownerName}, residente/naninirahan sa Sitio / Purok ${b.ownerSitioPurok}',
+      fontSize: 18,
+      align: 'both',
+    ));
+    body.writeln(_p(
+      'Barangay ${b.ownerBarangay}, Lungsod ng Puerto Princesa.',
+      fontSize: 18,
+    ));
+    body.writeln(_spacer());
+    body.writeln(_p(
+      'PAGKAKAKILANLAN NG BANGKANG MAY MOTOR',
+      align: 'center',
+      bold: true,
+      fontSize: 22,
+    ));
+    body.writeln(_spacer(height: 1));
+    body.writeln(
+        _p('Pangalan ng Bangkang may motor: ${b.vesselName}', fontSize: 18));
+    body.writeln(
+        _p('Uri/Klase ng Bangkang may motor: ${b.vesselTypeClass}', fontSize: 18));
+    body.writeln(
+        _p('Mga Materyales na ginamit: ${b.materialsUsed}', fontSize: 18));
+    body.writeln(
+        _p('Kabuuang Haba (Length overall): ${b.lengthOverall} m', fontSize: 18));
+    body.writeln(_p(
+        'Luwang (Breadth-Molded): ${b.breadthMolded} metro', fontSize: 18));
+    body.writeln(_p(
+        'Sukat ng Lalim (Depth-Molded): ${b.depthMolded} metro', fontSize: 18));
+    body.writeln(
+        _p('Bilang ng Kamarote (No. of Deck): ${b.numberOfDecks}', fontSize: 18));
+    body.writeln(
+        _p('Bilang ng Palo (No. of Mast): ${b.numberOfMasts}', fontSize: 18));
+    body.writeln(
+        _p('Kabuuang bigat (Gross Tonnage) G.T.: ${b.grossTonnageBuilder}', fontSize: 18));
+    body.writeln(
+        _p('Netong bigat (Net Tonnage) N.T.: ${b.netTonnageBuilder}', fontSize: 18));
+    body.writeln(_p(
+        'Kailan natapos o ipinalaot (Date Finished/Launched): ${b.dateFinishedLaunched}',
+        fontSize: 18));
+    body.writeln(_p(
+        'Bilang ng gamit pangkaligtasan (Life Vest/Jacket): ${b.lifeVests}',
+        fontSize: 18));
+    body.writeln(_spacer());
+    body.writeln(_p(
+      'PAGKAKAKILANLAN NG MAKINA',
+      align: 'center',
+      bold: true,
+      fontSize: 22,
+    ));
+    body.writeln(_spacer(height: 1));
+    body.writeln(_p('Uri ng Makina: ${b.engineType}', fontSize: 18));
+    body.writeln(
+        _p('Lakas at Modelo (HP & MODEL): ${b.horsepowerModel}', fontSize: 18));
+    body.writeln(_p('Serial Number: ${b.serialNumber}', fontSize: 18));
+    body.writeln(
+        _p('Petsang Ginawa: ${b.dateManufactured}', fontSize: 18));
+    body.writeln(
+        _p('Ilang Silindro: ${b.numberOfCylinders}', fontSize: 18));
+    body.writeln(_p('Bore at Stroke: ${b.boreStroke}', fontSize: 18));
+    body.writeln(_p('R.P.M: ${b.rpm}', fontSize: 18));
+    body.writeln(_p('Ilang Makina: ${b.numberOfEngines}', fontSize: 18));
+    body.writeln(_p(
+        'Ilang Turnilyo / Screw (propellers): ${b.numberOfPropellers}',
+        fontSize: 18));
+    body.writeln(_p(
+        'Petsa at lugar na inisyu (Date & place issued): ${b.datePlaceIssued}',
+        fontSize: 18));
+    body.writeln(_spacer());
+    body.writeln(_p('PANGALAN AT LAGDA NG GUMAWA',
+        align: 'center', bold: true, fontSize: 20));
+    body.writeln(_p("Lagda / pangalan (Builder's signature): ${b.builderSignature}",
+        fontSize: 18));
+    body.writeln(_spacer());
+    body.writeln(_p('Prepared By: ${b.preparedBy}', fontSize: 18));
+    body.writeln(_spacer());
+    body.writeln(_p(
+      'Sumumpa sa harap ko, ngayong ika-${b.oathDay} ng ${b.oathMonth} ${b.oathYear}${b.oathDate.isNotEmpty ? ' (${b.oathDate})' : ''}.',
+      fontSize: 18,
+      align: 'both',
+    ));
+    body.writeln(_p(
+      'Katibayan ng paninirahan — BLG. ${b.residenceCertBlg}; na iginawad: ${b.residenceCertIssued}; sa ${b.residenceCertPlace}.',
+      fontSize: 18,
+      align: 'both',
+    ));
+    if (b.residenceCertDetails.isNotEmpty) {
+      body.writeln(_p(b.residenceCertDetails, fontSize: 16));
+    }
+    body.writeln(_spacer());
+    body.writeln(_p(
+      '(Applicant: ${b.applicantName}. Contact: ${b.contactNumber}. Inspektor: ${b.inspectorName}. Petsa ng isyu: ${b.issuedDate}.)',
+      fontSize: 14,
+    ));
+
+    body.writeln('''
+<w:sectPr>
+  <w:pgSz w:w="11906" w:h="16838"/>
+  <w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/>
+</w:sectPr>
+''');
+
+    return '''
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    ${body.toString()}
+  </w:body>
+</w:document>
+''';
   }
 
   static String _buildContentTypesXml() {

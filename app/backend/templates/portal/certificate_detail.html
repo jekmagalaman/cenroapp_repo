@@ -9,6 +9,14 @@
     <h3 class="mb-0">{{ cert.control_number }}</h3>
   </div>
   <div class="d-flex gap-2">
+    <a
+      id="download-pdf-btn"
+      class="btn btn-success"
+      href="{% url 'portal_cert_export' cert.pk 'pdf' %}"
+      data-filename="{{ cert.control_number }}.pdf"
+    >Download PDF</a>
+    <a class="btn btn-outline-success" href="{% url 'portal_cert_export' cert.pk 'excel' %}">Download Excel</a>
+    <a class="btn btn-outline-success" href="{% url 'portal_cert_export' cert.pk 'word' %}">Download Word</a>
     <a class="btn btn-outline-secondary" href="/panel/certificates/">Back</a>
     <a class="btn btn-outline-primary" href="/admin/certificates/certificate/{{ cert.pk }}/change/">Open in Django Admin</a>
   </div>
@@ -44,7 +52,11 @@
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-4">
-            <div class="text-muted small">License type</div>
+            <div class="text-muted small">Certificate type</div>
+            <div class="fw-semibold">{{ cert.get_certificate_type_display }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted small">License type (New / Renew)</div>
             <div class="fw-semibold">{{ cert.license_type }}</div>
           </div>
           <div class="col-md-4">
@@ -52,12 +64,20 @@
             <div class="fw-semibold">{{ cert.issued_date }}</div>
           </div>
           <div class="col-md-4">
-            <div class="text-muted small">Inspector</div>
+            <div class="text-muted small">Inspector (entered on form)</div>
             <div class="fw-semibold">{{ cert.inspector_name }}</div>
           </div>
           <div class="col-md-4">
-            <div class="text-muted small">Created by</div>
-            <div class="fw-semibold">{{ cert.created_by|default:"—" }}</div>
+            <div class="text-muted small">Sent by account</div>
+            <div class="fw-semibold">
+              {% if cert.created_by %}
+                {{ cert.created_by.username }}
+              {% elif cert.inspector_name %}
+                {{ cert.inspector_name }} <span class="text-muted small">(legacy)</span>
+              {% else %}
+                —
+              {% endif %}
+            </div>
           </div>
           <div class="col-md-4">
             <div class="text-muted small">Created at</div>
@@ -68,5 +88,40 @@
     </div>
   </div>
 </div>
+<script>
+  (function () {
+    const btn = document.getElementById('download-pdf-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async function (event) {
+      event.preventDefault();
+      const originalText = btn.textContent;
+      btn.textContent = 'Downloading...';
+      btn.classList.add('disabled');
+
+      try {
+        const response = await fetch(btn.href, { credentials: 'same-origin' });
+        if (!response.ok) {
+          throw new Error('Failed to download PDF.');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = btn.dataset.filename || 'certificate.pdf';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (_error) {
+        window.location.href = btn.href;
+      } finally {
+        btn.textContent = originalText;
+        btn.classList.remove('disabled');
+      }
+    });
+  })();
+</script>
 {% endblock %}
 

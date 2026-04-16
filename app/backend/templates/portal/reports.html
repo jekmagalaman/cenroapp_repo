@@ -1,0 +1,185 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Reports | CENRO Admin Portal{% endblock %}
+
+{% block head %}
+<style>
+  .chart-card {
+    border: 0;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
+  }
+  .chart-container {
+    position: relative;
+    height: 350px;
+  }
+  .section-title {
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  .stat-cards-row {
+    margin-bottom: 2rem;
+  }
+</style>
+<link href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" rel="stylesheet" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h3 class="mb-1 fw-bold" style="letter-spacing: -0.02em;">Analytics Reports</h3>
+</div>
+
+<div class="row g-3 stat-cards-row">
+  <div class="col-lg-6">
+    <div class="card chart-card h-100">
+      <div class="card-header bg-white border-0 py-3">
+        <div class="section-title">Certificates by Type</div>
+      </div>
+      <div class="card-body p-0">
+        <div class="chart-container">
+          <canvas id="pieChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card chart-card h-100">
+      <div class="card-header bg-white border-0 py-3">
+        <div class="section-title">Monthly Trends</div>
+      </div>
+      <div class="card-body p-0">
+        <div class="chart-container">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card chart-card h-100">
+      <div class="card-header bg-white border-0 py-3">
+        <div class="section-title">License Breakdown</div>
+      </div>
+      <div class="card-body p-0">
+        <div class="chart-container">
+          <canvas id="doughnutChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card chart-card h-100">
+      <div class="card-header bg-white border-0 py-3">
+        <div class="section-title">Daily Activity (Last 30 days)</div>
+      </div>
+      <div class="card-body p-0">
+        <div class="chart-container">
+          <canvas id="lineChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Pie Chart
+  const pieCtx = document.getElementById('pieChart').getContext('2d');
+  const pieLabels = [{% for d in pie_data %}'{{ d.label|escapejs }}',{% endfor %}];
+  const pieValues = [{% for d in pie_data %}{{ d.value }},{% endfor %}];
+  new Chart(pieCtx, {
+    type: 'pie',
+    data: {
+      labels: pieLabels,
+      datasets: [{
+        data: pieValues,
+        backgroundColor: ['#1b5e20', '#0d4a17', '#003391', '#198754', '#0d6efd', '#0aa2c0', '#fd7e14', '#dc3545', '#6f42c1', '#20c997']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+
+  // Bar Chart
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: {{ bar_data_monthly.labels|safe }},
+      datasets: [{
+        label: 'Certificates',
+        data: {{ bar_data_monthly.data|safe }},
+        backgroundColor: 'rgba(27, 94, 32, 0.8)',
+        borderColor: '#1b5e20',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  // Doughnut Chart
+  const doughnutCtx = document.getElementById('doughnutChart').getContext('2d');
+  const licenseLabels = [{% for d in license_data %}'{{ d.license_type|default:"Unknown"|escapejs }}',{% endfor %}];
+  const licenseValues = [{% for d in license_data %}{{ d.count }},{% endfor %}];
+  new Chart(doughnutCtx, {
+    type: 'doughnut',
+    data: {
+      labels: licenseLabels,
+      datasets: [{
+        data: licenseValues,
+        backgroundColor: ['#003391', '#1b5e20', '#198754', '#fd7e14', '#6f42c1']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+
+  // Line Chart
+  const lineCtx = document.getElementById('lineChart').getContext('2d');
+  new Chart(lineCtx, {
+    type: 'line',
+    data: {
+      labels: {{ line_data.labels|safe }},
+      datasets: [{
+        label: 'New Certificates',
+        data: {{ line_data.certs|safe }},
+        borderColor: '#1b5e20',
+        backgroundColor: 'rgba(27, 94, 32, 0.1)',
+        tension: 0.4
+      }, {
+        label: 'Photo Reports',
+        data: {{ line_data.photos|safe }},
+        borderColor: '#003391',
+        backgroundColor: 'rgba(0, 51, 145, 0.1)',
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+</script>
+{% endblock %}

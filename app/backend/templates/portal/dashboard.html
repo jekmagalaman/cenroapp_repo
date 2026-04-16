@@ -1,5 +1,7 @@
 {% extends "portal/base.html" %}
 
+{% load static %}
+
 {% block title %}Dashboard | CENRO Admin Portal{% endblock %}
 
 {% block head %}
@@ -54,15 +56,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-  <div>
-    <h3 class="mb-1 fw-bold">Dashboard Overview</h3>
-    <div class="small-muted">Monitor certificates submitted from the mobile app.</div>
-  </div>
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-primary btn-sm" href="/panel/certificates/">Manage Certificates</a>
-    <a class="btn btn-success btn-sm" href="/panel/certificates/">Open Records</a>
-  </div>
+<div class="mb-4">
+  <h3 class="mb-1 fw-bold" style="letter-spacing: -0.02em;">Dashboard Overview</h3>
 </div>
 
 <div class="row g-3 mb-4">
@@ -165,9 +160,32 @@
     </div>
   </div>
   <div class="col-xl-4">
+    <div class="card section-card h-100 mb-3">
+      <div class="card-header bg-white border-0 py-3">
+        <div class="section-title">By Certificate Type</div>
+      </div>
+      <div class="card-body pt-1">
+        {% for row in cert_type_breakdown %}
+          <div class="metric-row py-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="fw-semibold">{{ row.label }}</div>
+              <span class="badge text-bg-primary">{{ row.count }}</span>
+            </div>
+            <div class="progress" role="progressbar" aria-label="Certificate type count" aria-valuemin="0" aria-valuemax="{{ total_certificates }}">
+              <div
+                class="progress-bar bg-primary"
+                style="width: {% if total_certificates %}{% widthratio row.count total_certificates 100 %}{% else %}0{% endif %}%"
+              ></div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-muted">No data.</div>
+        {% endfor %}
+      </div>
+    </div>
     <div class="card section-card h-100">
       <div class="card-header bg-white border-0 py-3">
-        <div class="section-title">By License Type</div>
+        <div class="section-title">By License (New / Renew)</div>
       </div>
       <div class="card-body pt-1">
         {% for row in license_breakdown %}

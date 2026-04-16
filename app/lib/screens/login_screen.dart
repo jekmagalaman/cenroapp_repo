@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
-import '../theme/app_theme.dart';
 import 'home_screen.dart';
 
 /// Login screen for inspectors to get a token so they can sync certificates to admin.
@@ -14,10 +13,19 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _serverController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _loading = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    AuthService.getBaseUrl().then((url) {
+      if (mounted) _serverController.text = url;
+    });
+  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -26,7 +34,12 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
     });
 
-    final ok = await AuthService.login(
+    final server = _serverController.text.trim();
+    if (server.isNotEmpty) {
+      await AuthService.setBaseUrl(server);
+    }
+
+    final outcome = await AuthService.login(
       _usernameController.text.trim(),
       _passwordController.text.trim(),
     );
@@ -34,17 +47,18 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     setState(() => _loading = false);
 
-    if (ok) {
+    if (outcome.ok) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } else {
-      setState(() => _error = 'Invalid username or password');
+      setState(() => _error = outcome.error ?? 'Login failed.');
     }
   }
 
   @override
   void dispose() {
+    _serverController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -71,6 +85,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                 ),
                 const SizedBox(height: 32),
+                TextFormField(
+                  controller: _serverController,
+                  decoration: const InputDecoration(
+                    labelText: 'Server URL',
+                    hintText: 'http://192.168.1.5:8000',
+                    helperText:
+                        'Your PC\'s IP and port (same Wi‑Fi). Not localhost on a phone.',
+                  ),
+                  keyboardType: TextInputType.url,
+                  autocorrect: false,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Enter the admin API URL';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _usernameController,
                   decoration: const InputDecoration(

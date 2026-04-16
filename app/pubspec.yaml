@@ -1,11 +1,11 @@
 name: cenroapp
 description: Offline Certificate of Inspection generator for City Government of Puerto Princesa.
-publish_to: 'none'
+publish_to: "none"
 
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -23,11 +23,21 @@ dependencies:
   http: ^1.2.0
   connectivity_plus: ^6.0.2
   shared_preferences: ^2.2.2
+  image_picker: ^1.1.2
+  geolocator: ^13.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  image_path: "assets/images/icon/icon.png"
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/logos/
+    - assets/images/background/

@@ -1,0 +1,237 @@
+/* CENRO Django admin — modern shell (header nav, no sidebar). */
+
+:root {
+  --cenro-green: #1b5e20;
+  --cenro-green-dark: #0d4a17;
+  --cenro-blue: #003391;
+  --cenro-surface: #f4f6f9;
+  --cenro-card: #ffffff;
+  --cenro-radius: 14px;
+  --cenro-shadow: 0 8px 30px rgba(16, 24, 40, 0.08);
+}
+
+body.cenro-admin-skin {
+  background: var(--cenro-surface) !important;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body.cenro-admin-skin #container {
+  min-height: 100vh;
+}
+
+body.cenro-admin-skin #header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, var(--cenro-green) 0%, var(--cenro-green-dark) 45%, var(--cenro-blue) 100%);
+  color: #fff;
+  padding: 0.85rem 1.35rem;
+  border: none;
+  box-shadow: var(--cenro-shadow);
+}
+
+body.cenro-admin-skin #header a:link,
+body.cenro-admin-skin #header a:visited {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+body.cenro-admin-skin #branding {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+body.cenro-admin-skin #branding h1,
+body.cenro-admin-skin #site-name {
+  margin: 0;
+  padding: 0;
+  font-weight: 700;
+  font-size: 1.12rem;
+  letter-spacing: -0.02em;
+}
+
+body.cenro-admin-skin #site-name a:link,
+body.cenro-admin-skin #site-name a:visited {
+  color: #fff !important;
+}
+
+body.cenro-admin-skin #user-tools {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+body.cenro-admin-skin #user-tools a {
+  text-decoration: none;
+}
+
+body.cenro-admin-skin #user-tools a:hover,
+body.cenro-admin-skin #user-tools button:hover {
+  text-decoration: underline;
+}
+
+body.cenro-admin-skin #user-tools button {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+body.cenro-admin-skin .cenro-admin-main-nav {
+  flex: 1 1 100%;
+  order: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding-top: 0.65rem;
+  margin-top: 0.15rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.cenro-admin-skin .cenro-admin-main-nav a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+body.cenro-admin-skin .cenro-admin-main-nav a:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff !important;
+}
+
+body.cenro-admin-skin .cenro-admin-main-nav a.cenro-nav-active {
+  background: #fff;
+  color: var(--cenro-green-dark) !important;
+  border-color: #fff;
+}
+
+body.cenro-admin-skin .breadcrumbs {
+  background: var(--cenro-card);
+  padding: 0.65rem 1.25rem;
+  margin: 0;
+  border-radius: 0;
+  font-size: 0.875rem;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+body.cenro-admin-skin .breadcrumbs a {
+  color: var(--cenro-green);
+  font-weight: 600;
+}
+
+body.cenro-admin-skin div.main {
+  margin-left: 0 !important;
+}
+
+body.cenro-admin-skin .content {
+  padding: 1.25rem 1.5rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+body.cenro-admin-skin #content {
+  background: transparent;
+}
+
+body.cenro-admin-skin #content h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1a1d21;
+}
+
+body.cenro-admin-skin .module,
+body.cenro-admin-skin .dashboard .module table,
+body.cenro-admin-skin fieldset.module {
+  border-radius: var(--cenro-radius);
+  overflow: hidden;
+  border: none !important;
+  box-shadow: var(--cenro-shadow);
+  background: var(--cenro-card);
+}
+
+body.cenro-admin-skin .module h2,
+body.cenro-admin-skin .module caption {
+  background: linear-gradient(90deg, rgba(27, 94, 32, 0.12), rgba(0, 51, 145, 0.08));
+  color: #1a1d21;
+  font-weight: 700;
+}
+
+body.cenro-admin-skin .submit-row input,
+body.cenro-admin-skin input[type="submit"],
+body.cenro-admin-skin .button,
+body.cenro-admin-skin button[type="submit"]:not(.theme-toggle) {
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+}
+
+body.cenro-admin-skin .object-tools a {
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+body.cenro-admin-skin #changelist-filter {
+  border-radius: var(--cenro-radius);
+  box-shadow: var(--cenro-shadow);
+  border: none !important;
+}
+
+body.cenro-admin-skin .messagelist li {
+  border-radius: 10px;
+}
+
+/* Login */
+body.cenro-admin-skin.login #header {
+  justify-content: center;
+  text-align: center;
+}
+
+body.cenro-admin-skin.login .cenro-admin-main-nav {
+  display: none;
+}
+
+body.cenro-admin-skin.login #header #branding {
+  flex: 1 1 100%;
+}
+
+body.cenro-admin-skin.login #content {
+  padding: 2rem 1rem;
+}
+
+body.cenro-admin-skin.login #content-main {
+  max-width: 400px;
+  margin: 0 auto;
+  background: var(--cenro-card);
+  padding: 2rem;
+  border-radius: var(--cenro-radius);
+  box-shadow: var(--cenro-shadow);
+}
+
+body.cenro-admin-skin.login .submit-row input {
+  width: 100%;
+  background: var(--cenro-green);
+  border: none;
+  color: #fff;
+  padding: 0.65rem 1rem;
+}
+
+body.cenro-admin-skin.login .submit-row input:hover {
+  background: var(--cenro-green-dark);
+}

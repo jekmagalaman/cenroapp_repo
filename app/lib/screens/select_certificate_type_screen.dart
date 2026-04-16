@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'form_screen.dart';
+import 'certificate_action_screen.dart';
 
 class CertificateTypeOption {
   final String key;
@@ -83,7 +83,8 @@ class SelectCertificateTypeScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => FormScreen(certificateType: type.key),
+                      builder: (_) =>
+                          CertificateActionScreen(certificateType: type.key),
                     ),
                   );
                 },
