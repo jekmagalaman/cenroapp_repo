@@ -11,8 +11,8 @@ from datetime import timedelta
 
 from .export_service import build_excel_bytes, build_pdf_bytes, build_word_bytes
 from .models import Certificate, PhotoReport
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
-from django import forms
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
@@ -232,7 +232,6 @@ def inspectors_list(request):
     return render(request, 'portal/inspectors_list.html', {
         'inspectors': qs,
         'q': q,
-        'user_creation_form': UserCreationForm(),
     })
 
 
@@ -245,25 +244,47 @@ def user_create(request):
         messages.error(request, 'Only superusers can create users.')
         return redirect('portal_inspectors')
 
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+    if request.method != 'POST':
+        return redirect('portal_inspectors')
 
-        if form.is_valid():
-            user = form.save(commit=False)
+    username = (request.POST.get('username') or '').strip()
+    password1 = request.POST.get('password1') or ''
+    password2 = request.POST.get('password2') or ''
+    email = (request.POST.get('email') or '').strip()
+    first_name = (request.POST.get('first_name') or '').strip()
+    last_name = (request.POST.get('last_name') or '').strip()
+    is_staff = 'is_staff' in request.POST
+    is_superuser = 'is_superuser' in request.POST
 
-            # Default role
-            user.is_staff = True
+    if not username:
+        messages.error(request, 'Username is required.')
+        return redirect('portal_inspectors')
+    if User.objects.filter(username=username).exists():
+        messages.error(request, f'Username "{username}" already exists.')
+        return redirect('portal_inspectors')
+    if len(password1) < 8:
+        messages.error(request, 'Password must be at least 8 characters.')
+        return redirect('portal_inspectors')
+    if password1 != password2:
+        messages.error(request, 'Passwords do not match.')
+        return redirect('portal_inspectors')
+    if email:
+        try:
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, 'Enter a valid email address.')
+            return redirect('portal_inspectors')
 
-            # Optional extra fields
-            user.email = request.POST.get('email')
-            user.first_name = request.POST.get('first_name')
-            user.last_name = request.POST.get('last_name')
-
-            user.save()
-
-            messages.success(request, f'User {user.username} created successfully.')
-        else:
-            messages.error(request, 'Error creating user.')
+    user = User.objects.create_user(
+        username=username,
+        password=password1,
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+        is_staff=is_staff or is_superuser,
+        is_superuser=is_superuser,
+    )
+    messages.success(request, f'User {user.username} created successfully.')
 
     # 🔥 ALWAYS redirect (no render here)
     return redirect('portal_inspectors')
@@ -282,20 +303,39 @@ def user_update(request, pk):
         return redirect('portal_inspectors')
 
     if request.method == 'POST':
-        # ✅ MANUAL FIELD UPDATE
-        user.email = request.POST.get('email')
-        user.first_name = request.POST.get('first_name')
-        user.last_name = request.POST.get('last_name')
+        email = (request.POST.get('email') or '').strip()
+        first_name = (request.POST.get('first_name') or '').strip()
+        last_name = (request.POST.get('last_name') or '').strip()
+        user.email = email
+        user.first_name = first_name
+        user.last_name = last_name
 
-        user.is_staff = 'is_staff' in request.POST
-        user.is_superuser = 'is_superuser' in request.POST
+        if request.user.is_superuser:
+            next_is_staff = 'is_staff' in request.POST
+            next_is_superuser = 'is_superuser' in request.POST
+            # Prevent accidental lockout on own account.
+            if user == request.user and (not next_is_staff or not next_is_superuser):
+                messages.error(request, 'You cannot remove your own staff/superuser access.')
+                return redirect('user_update', pk=pk)
+            user.is_staff = next_is_staff or next_is_superuser
+            user.is_superuser = next_is_superuser
 
         # 🔐 PASSWORD UPDATE (OPTIONAL)
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
 
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                messages.error(request, 'Enter a valid email address.')
+                return redirect('user_update', pk=pk)
+
         if password1 or password2:
             if password1 == password2:
+                if len(password1) < 8:
+                    messages.error(request, "Password must be at least 8 characters.")
+                    return redirect('user_update', pk=pk)
                 user.set_password(password1)
             else:
                 messages.error(request, "Passwords do not match.")
